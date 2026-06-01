@@ -12,9 +12,17 @@ frontend/.env.local
 backend/.gradle/
 backend/build/
 
-# vscode
+# IDE
 **/.vscode/
+**/.idea/
 
 # env
 **/.env
 **/.env.*
+
+# OS
+**/.DS_Store
+**/Thumbs.db
+
+# logs
+**/*.log
