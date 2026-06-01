@@ -1,0 +1,20 @@
+docs/
+memory/
+notion/
+CLAUDE.md
+
+# frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+
+# backend
+backend/.gradle/
+backend/build/
+
+# vscode
+**/.vscode/
+
+# env
+**/.env
+**/.env.*

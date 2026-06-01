@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.budget.mapper.BudgetMapper">
+
+    <!-- ─────── ResultMap: 응답 DTO (실제지출 포함) ─────── -->
+    <resultMap id="BudgetResponseMap" type="com.cashbook.domain.budget.dto.BudgetResponse">
+        <id     property="id"            column="id"/>
+        <result property="categoryId"    column="category_id"/>
+        <result property="categoryName"  column="category_name"/>
+        <result property="categoryIcon"  column="category_icon"/>
+        <result property="categoryColor" column="category_color"/>
+        <result property="amount"        column="amount"/>
+        <result property="spent"         column="spent"/>
+        <result property="remaining"     column="remaining"/>
+        <result property="yearMonth"     column="year_month"/>
+    </resultMap>
+
+    <!-- ─────── ResultMap: 엔티티 (소유권 확인용) ─────── -->
+    <resultMap id="BudgetEntityMap" type="com.cashbook.domain.budget.entity.Budget">
+        <id     property="id"         column="id"/>
+        <result property="userId"     column="user_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="amount"     column="amount"/>
+        <result property="yearMonth"  column="year_month"/>
+        <result property="createdAt"  column="created_at"/>
+        <result property="updatedAt"  column="updated_at"/>
+        <result property="deletedAt"  column="deleted_at"/>
+    </resultMap>
+
+    <!-- ─────── 예산 등록 ─────── -->
+    <insert id="insert"
+            parameterType="com.cashbook.domain.budget.entity.Budget"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO budgets (user_id, category_id, amount, year_month)
+        VALUES (#{userId}, #{categoryId}, #{amount}, #{yearMonth})
+    </insert>
+
+    <!--
+        ─────────────────────────────────────────────────────────────────
+        월별 예산 목록 + 실제지출 조회
+        ─────────────────────────────────────────────────────────────────
+        CTE(spent_cte): 각 예산 ID별 실제 EXPENSE SUM 계산
+          - category_id IS NULL → 해당 월 전체 지출 합계 (전체 예산)
+          - category_id NOT NULL → 해당 카테고리의 지출 합계
+        ─────────────────────────────────────────────────────────────────
+    -->
+    <select id="findByUserIdAndMonth" resultMap="BudgetResponseMap">
+        WITH spent_cte AS (
+            SELECT
+                b.id AS budget_id,
+                COALESCE(SUM(t.amount), 0) AS spent
+            FROM   budgets b
+            LEFT   JOIN transactions t
+                     ON t.user_id     = b.user_id
+                    AND (b.category_id IS NULL OR t.category_id = b.category_id)
+                    AND t.type         = 'EXPENSE'
+                    AND TO_CHAR(t.txn_date, 'YYYY-MM') = b.year_month
+                    AND t.deleted_at  IS NULL
+            WHERE  b.user_id    = #{userId}
+              AND  b.year_month = #{yearMonth}
+              AND  b.deleted_at IS NULL
+            GROUP  BY b.id
+        )
+        SELECT
+            b.id,
+            b.category_id,
+            c.name  AS category_name,
+            c.icon  AS category_icon,
+            c.color AS category_color,
+            b.amount,
+            s.spent,
+            (b.amount - s.spent) AS remaining,
+            b.year_month
+        FROM   budgets b
+        JOIN   spent_cte        s ON s.budget_id = b.id
+        LEFT   JOIN categories  c ON c.id = b.category_id
+                                 AND c.deleted_at IS NULL
+        WHERE  b.user_id    = #{userId}
+          AND  b.year_month = #{yearMonth}
+          AND  b.deleted_at IS NULL
+        ORDER  BY b.category_id NULLS FIRST, b.id ASC
+    </select>
+
+    <!-- ─────── 단건 조회 (엔티티, 소유권 확인용) ─────── -->
+    <select id="findByIdAndUserId" resultMap="BudgetEntityMap">
+        SELECT id, user_id, category_id, amount, year_month,
+               created_at, updated_at, deleted_at
+        FROM   budgets
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <!-- ─────── 중복 예산 체크 ─────── -->
+    <!--
+        category_id가 NULL 허용이므로 일반 = 비교 불가.
+        COALESCE(category_id, -1) = COALESCE(#{categoryId}, -1) 로 NULL 안전 비교.
+    -->
+    <select id="countDuplicate" resultType="int">
+        SELECT COUNT(*)
+        FROM   budgets
+        WHERE  user_id                        = #{userId}
+          AND  COALESCE(category_id, -1)      = COALESCE(#{categoryId, jdbcType=BIGINT}, -1)
+          AND  year_month                     = #{yearMonth}
+          AND  deleted_at                    IS NULL
+    </select>
+
+    <!-- ─────── 예산 금액 수정 ─────── -->
+    <update id="update">
+        UPDATE budgets
+        SET    amount     = #{amount},
+               updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+    <!-- ─────── 예산 Soft Delete ─────── -->
+    <update id="softDelete">
+        UPDATE budgets
+        SET    deleted_at = NOW(),
+               updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+</mapper>

@@ -1,0 +1,405 @@
+### ==============================================
+### cash-book API 테스트 (IntelliJ HTTP Client)
+### ==============================================
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### ──────────────────────────────────────────
+### 1. 회원가입
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "test@cashbook.com",
+  "password": "password123",
+  "name": "홍길동",
+  "birthYear": 2000
+}
+
+### ──────────────────────────────────────────
+### 2. 로그인 → @accessToken 저장
+### ──────────────────────────────────────────
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@cashbook.com",
+  "password": "password123"
+}
+
+### 로그인 응답에서 토큰 추출 (IntelliJ 전용)
+> {%
+  client.global.set("accessToken", response.body.data.accessToken);
+  client.global.set("refreshToken", response.body.data.refreshToken);
+  client.test("Login success", function() {
+    client.assert(response.status === 200, "Status should be 200");
+    client.assert(response.body.data.accessToken !== undefined, "Access token should exist");
+  });
+%}
+
+### ──────────────────────────────────────────
+### 3. 카테고리 목록 조회
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/categories
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 4. 거래내역 등록 — 지출 (식비 categoryId=1 가정)
+### ──────────────────────────────────────────
+# @name createExpense
+POST {{baseUrl}}/api/transactions
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "categoryId": 1,
+  "type": "EXPENSE",
+  "amount": 12000,
+  "memo": "점심 김치찌개",
+  "txnDate": "2026-06-01"
+}
+
+> {%
+  client.global.set("transactionId", response.body.data.id);
+%}
+
+### ──────────────────────────────────────────
+### 5. 거래내역 등록 — 수입 (급여 categoryId=9 가정)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/transactions
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "categoryId": 9,
+  "type": "INCOME",
+  "amount": 3000000,
+  "memo": "6월 급여",
+  "txnDate": "2026-06-25"
+}
+
+### ──────────────────────────────────────────
+### 6. 거래내역 목록 조회 (2026년 6월, 1페이지)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/transactions?year=2026&month=6&page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 7. 거래내역 삭제 (Soft Delete)
+### ──────────────────────────────────────────
+DELETE {{baseUrl}}/api/transactions/{{transactionId}}
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 8. 로그아웃
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 9. 유효성 검증 테스트 — 이메일 형식 오류
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "not-an-email",
+  "password": "password123",
+  "name": "테스터"
+}
+
+### ──────────────────────────────────────────
+### 10. 중복 이메일 테스트 (409 Conflict 기대)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "test@cashbook.com",
+  "password": "password123",
+  "name": "중복유저",
+  "birthYear": 1995
+}
+
+### ──────────────────────────────────────────
+### 11. 인증 없이 카테고리 조회 (401 기대)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/categories
+
+### ──────────────────────────────────────────
+### 12. 현재 로그인 유저 정보 조회 (me)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 13. 거래내역 수정 (PUT)
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/transactions/{{transactionId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "categoryId": 1,
+  "type": "EXPENSE",
+  "amount": 15000,
+  "memo": "점심 수정 — 삼겹살",
+  "txnDate": "2026-06-01"
+}
+
+### ──────────────────────────────────────────
+### 14. 월별 요약 (summary) — 6월
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/transactions/summary?year=2026&month=6
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 15. 월별 요약 — year/month 생략 시 현재 월
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/transactions/summary
+Authorization: Bearer {{accessToken}}
+
+### ══════════════════════════════════════════
+### 카테고리 CRUD
+### ══════════════════════════════════════════
+
+### ──────────────────────────────────────────
+### 16. 커스텀 카테고리 생성
+### ──────────────────────────────────────────
+# @name createCategory
+POST {{baseUrl}}/api/categories
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "헬스/운동",
+  "type": "EXPENSE",
+  "icon": "fitness",
+  "color": "#66BB6A",
+  "sortOrder": 10
+}
+
+> {%
+  client.global.set("categoryId", response.body.data.id);
+%}
+
+### ──────────────────────────────────────────
+### 17. 커스텀 카테고리 수정
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/categories/{{categoryId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "헬스/운동 (수정)",
+  "icon": "fitness_center",
+  "color": "#43A047",
+  "sortOrder": 10
+}
+
+### ──────────────────────────────────────────
+### 18. 기본 카테고리 삭제 시도 (403 기대)
+### ──────────────────────────────────────────
+DELETE {{baseUrl}}/api/categories/1
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 19. 커스텀 카테고리 삭제
+### ──────────────────────────────────────────
+DELETE {{baseUrl}}/api/categories/{{categoryId}}
+Authorization: Bearer {{accessToken}}
+
+### ══════════════════════════════════════════
+### 예산 API
+### ══════════════════════════════════════════
+
+### ──────────────────────────────────────────
+### 20. 카테고리별 예산 설정 (식비 categoryId=1)
+### ──────────────────────────────────────────
+# @name createBudget
+POST {{baseUrl}}/api/budgets
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "categoryId": 1,
+  "amount": 300000,
+  "yearMonth": "2026-06"
+}
+
+> {%
+  client.global.set("budgetId", response.body.data.id);
+%}
+
+### ──────────────────────────────────────────
+### 21. 월 전체 예산 설정 (categoryId 없음)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/budgets
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "amount": 1500000,
+  "yearMonth": "2026-06"
+}
+
+### ──────────────────────────────────────────
+### 22. 중복 예산 등록 시도 (409 기대)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/budgets
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "categoryId": 1,
+  "amount": 200000,
+  "yearMonth": "2026-06"
+}
+
+### ──────────────────────────────────────────
+### 23. 월별 예산 조회 (실제지출 포함)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/budgets?year_month=2026-06
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 24. 예산 금액 수정
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/budgets/{{budgetId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "amount": 350000
+}
+
+### ──────────────────────────────────────────
+### 25. 예산 조회 — year_month 생략 시 현재 월
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/budgets
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 26. 예산 삭제
+### ──────────────────────────────────────────
+DELETE {{baseUrl}}/api/budgets/{{budgetId}}
+Authorization: Bearer {{accessToken}}
+
+### ══════════════════════════════════════════
+### 통계 API
+### ══════════════════════════════════════════
+
+### ──────────────────────────────────────────
+### 27. 카테고리별 지출 통계 (2026년 6월)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/statistics/category?year=2026&month=6
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 28. 카테고리 통계 — year/month 생략 시 현재 월
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/statistics/category
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 29. 월별 수입/지출 추이 (최근 6개월 기본)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/statistics/trend
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 30. 월별 추이 — 최근 12개월
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/statistics/trend?months=12
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 31. months 유효성 검증 — 25 초과 (400 기대)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/statistics/trend?months=25
+Authorization: Bearer {{accessToken}}
+
+### ══════════════════════════════════════════
+### 혜택 API + 사용자 조건
+### ══════════════════════════════════════════
+
+### ──────────────────────────────────────────
+### 32. 사용자 조건 저장 (upsert)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/user-conditions
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "incomeLevel": "LOW",
+  "employmentStatus": "EMPLOYED",
+  "region": "서울"
+}
+
+### ──────────────────────────────────────────
+### 33. 내 조건 조회
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/user-conditions/me
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 34. 조건 부분 업데이트 (region만 변경)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/user-conditions
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "region": "경기"
+}
+
+### ──────────────────────────────────────────
+### 35. 혜택 목록 조회 (전체, 만료 제외 기본)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/benefits?page=0&size=20
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 36. 혜택 목록 — 카테고리 필터 (주거)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/benefits?category=주거
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 37. 혜택 목록 — 나이 + 만료 포함
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/benefits?age=26&includeExpired=true
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 38. 조건 기반 추천 혜택
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/benefits/recommended
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 39. 혜택 상세 (id=1)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/benefits/1
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 40. user_conditions 미등록 상태에서 추천 조회 (404 기대)
+###     → 신규 계정으로 먼저 register/login 후 테스트
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/benefits/recommended
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 41. 조건 유효성 검증 — 잘못된 incomeLevel (400 기대)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/user-conditions
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "incomeLevel": "VERY_LOW"
+}

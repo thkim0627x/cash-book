@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.auth.mapper.AuthMapper">
+
+    <!-- ─────── ResultMap ─────── -->
+    <resultMap id="UserResultMap" type="com.cashbook.domain.auth.entity.User">
+        <id     property="id"        column="id"/>
+        <result property="email"     column="email"/>
+        <result property="password"  column="password"/>
+        <result property="name"      column="name"/>
+        <result property="birthYear" column="birth_year"/>
+        <result property="role"      column="role"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <!-- ─────── 회원 등록 ─────── -->
+    <insert id="insertUser"
+            parameterType="com.cashbook.domain.auth.entity.User"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO users (email, password, name, birth_year, role)
+        VALUES (#{email}, #{password}, #{name}, #{birthYear}, #{role})
+    </insert>
+
+    <!-- ─────── 이메일로 조회 ─────── -->
+    <select id="findByEmail" resultMap="UserResultMap">
+        SELECT id, email, password, name, birth_year, role,
+               created_at, updated_at, deleted_at
+        FROM   users
+        WHERE  email = #{email}
+          AND  deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <!-- ─────── ID로 조회 ─────── -->
+    <select id="findById" resultMap="UserResultMap">
+        SELECT id, email, password, name, birth_year, role,
+               created_at, updated_at, deleted_at
+        FROM   users
+        WHERE  id = #{id}
+          AND  deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <!-- ─────── Refresh Token Upsert ─────── -->
+    <!-- user_id UNIQUE — 있으면 UPDATE, 없으면 INSERT -->
+    <insert id="upsertRefreshToken">
+        INSERT INTO refresh_tokens (user_id, token, expires_at)
+        VALUES (#{userId}, #{token}, #{expiresAt})
+        ON CONFLICT (user_id)
+            DO UPDATE SET token      = EXCLUDED.token,
+                          expires_at = EXCLUDED.expires_at,
+                          created_at = NOW()
+    </insert>
+
+    <!-- ─────── Refresh Token 삭제 (로그아웃) ─────── -->
+    <delete id="deleteRefreshTokenByUserId">
+        DELETE FROM refresh_tokens
+        WHERE  user_id = #{userId}
+    </delete>
+
+</mapper>

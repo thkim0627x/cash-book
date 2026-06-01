@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.usercondition.mapper.UserConditionMapper">
+
+    <!-- ─────── ResultMap ─────── -->
+    <resultMap id="UserConditionMap"
+               type="com.cashbook.domain.usercondition.entity.UserCondition">
+        <id     property="id"               column="id"/>
+        <result property="userId"           column="user_id"/>
+        <result property="incomeLevel"      column="income_level"/>
+        <result property="employmentStatus" column="employment_status"/>
+        <result property="region"           column="region"/>
+        <result property="createdAt"        column="created_at"/>
+        <result property="updatedAt"        column="updated_at"/>
+    </resultMap>
+
+    <!-- ─────── userId로 조회 ─────── -->
+    <select id="findByUserId" resultMap="UserConditionMap">
+        SELECT id, user_id, income_level, employment_status,
+               region, created_at, updated_at
+        FROM   user_conditions
+        WHERE  user_id = #{userId}
+        LIMIT  1
+    </select>
+
+    <!--
+        ─────────────────────────────────────────────────────────────
+        upsert (ON CONFLICT DO UPDATE)
+        ─────────────────────────────────────────────────────────────
+        ■ user_id UNIQUE 제약 활용
+        ■ null 필드는 기존값 유지 (COALESCE로 부분 업데이트)
+          → incomeLevel=null 이면 기존 income_level 값 보존
+        ─────────────────────────────────────────────────────────────
+    -->
+    <insert id="upsert" parameterType="com.cashbook.domain.usercondition.entity.UserCondition">
+        INSERT INTO user_conditions (user_id, income_level, employment_status, region)
+        VALUES (#{userId}, #{incomeLevel}, #{employmentStatus}, #{region})
+        ON CONFLICT (user_id)
+            DO UPDATE SET
+                income_level      = COALESCE(#{incomeLevel},      user_conditions.income_level),
+                employment_status = COALESCE(#{employmentStatus}, user_conditions.employment_status),
+                region            = COALESCE(#{region},           user_conditions.region),
+                updated_at        = NOW()
+    </insert>
+
+</mapper>

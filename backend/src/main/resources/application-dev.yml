@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cashbook
+    username: cashbook_user
+    password: cashbook1234
+    driver-class-name: org.postgresql.Driver
+  devtools:
+    restart:
+      enabled: true
+  batch:
+    job:
+      enabled: false          # 서버 시작 시 Job 자동 실행 방지
+    jdbc:
+      initialize-schema: always  # Batch 메타 테이블 자동 생성 (dev)
+
+server:
+  port: 8080
+
+jwt:
+  secret: cashbook-dev-secret-key-minimum-32chars-ok!!
+  access-token-expiry: 900000      # 15분 (ms)
+  refresh-token-expiry: 604800000  # 7일  (ms)
+
+logging:
+  level:
+    com.cashbook: DEBUG
+    org.mybatis: DEBUG
+    org.springframework.batch: INFO
