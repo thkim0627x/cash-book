@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.transaction.mapper.TransactionMapper">
+
+    <!-- ─────── ResultMap ─────── -->
+    <resultMap id="TransactionResponseMap"
+               type="com.cashbook.domain.transaction.dto.TransactionResponse">
+        <id     property="id"            column="id"/>
+        <result property="type"          column="type"/>
+        <result property="amount"        column="amount"/>
+        <result property="memo"          column="memo"/>
+        <result property="txnDate"       column="txn_date"/>
+        <result property="categoryId"    column="category_id"/>
+        <result property="categoryName"  column="category_name"/>
+        <result property="categoryIcon"  column="category_icon"/>
+        <result property="categoryColor" column="category_color"/>
+        <result property="createdAt"     column="created_at"/>
+    </resultMap>
+
+    <!-- ─────── 거래내역 등록 ─────── -->
+    <insert id="insert"
+            parameterType="com.cashbook.domain.transaction.entity.Transaction"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO transactions (user_id, category_id, type, amount, memo, txn_date)
+        VALUES (#{userId}, #{categoryId}, #{type}, #{amount}, #{memo}, #{txnDate})
+    </insert>
+
+    <!-- ─────── 월별 거래내역 목록 (categories JOIN) ─────── -->
+    <select id="findByUserIdAndMonth" resultMap="TransactionResponseMap">
+        SELECT
+            t.id,
+            t.type,
+            t.amount,
+            t.memo,
+            t.txn_date,
+            t.category_id,
+            c.name  AS category_name,
+            c.icon  AS category_icon,
+            c.color AS category_color,
+            t.created_at
+        FROM   transactions t
+        JOIN   categories   c ON c.id = t.category_id
+                              AND c.deleted_at IS NULL
+        WHERE  t.user_id     = #{userId}
+          AND  t.txn_date   BETWEEN #{startDate} AND #{endDate}
+          AND  t.deleted_at IS NULL
+        ORDER  BY t.txn_date DESC, t.id DESC
+        LIMIT  #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <!-- ─────── 총 건수 (페이지네이션) ─────── -->
+    <select id="countByUserIdAndMonth" resultType="long">
+        SELECT COUNT(*)
+        FROM   transactions
+        WHERE  user_id     = #{userId}
+          AND  txn_date   BETWEEN #{startDate} AND #{endDate}
+          AND  deleted_at IS NULL
+    </select>
+
+    <!-- ─────── 거래내역 수정 (본인 소유 검증 포함) ─────── -->
+    <update id="update" parameterType="com.cashbook.domain.transaction.entity.Transaction">
+        UPDATE transactions
+        SET    category_id = #{categoryId},
+               type        = #{type},
+               amount      = #{amount},
+               memo        = #{memo},
+               txn_date    = #{txnDate},
+               updated_at  = NOW()
+        WHERE  id          = #{id}
+          AND  user_id     = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+    <!-- ─────── 월별 수입/지출 요약 ─────── -->
+    <resultMap id="SummaryResultMap"
+               type="com.cashbook.domain.transaction.dto.TransactionSummaryResponse">
+        <result property="totalIncome"  column="total_income"/>
+        <result property="totalExpense" column="total_expense"/>
+        <result property="balance"      column="balance"/>
+        <result property="year"         column="year"/>
+        <result property="month"        column="month"/>
+    </resultMap>
+
+    <select id="getSummary" resultMap="SummaryResultMap">
+        SELECT
+            COALESCE(SUM(CASE WHEN type = 'INCOME'  THEN amount ELSE 0 END), 0) AS total_income,
+            COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS total_expense,
+            COALESCE(SUM(CASE WHEN type = 'INCOME'  THEN amount
+                              WHEN type = 'EXPENSE' THEN -amount
+                              ELSE 0 END), 0)                                    AS balance,
+            #{year}  AS year,
+            #{month} AS month
+        FROM   transactions
+        WHERE  user_id     = #{userId}
+          AND  txn_date   BETWEEN #{startDate} AND #{endDate}
+          AND  deleted_at IS NULL
+    </select>
+
+    <!-- ─────── Soft Delete (본인 소유만) ─────── -->
+    <update id="softDelete">
+        UPDATE transactions
+        SET    deleted_at = NOW(),
+               updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+</mapper>

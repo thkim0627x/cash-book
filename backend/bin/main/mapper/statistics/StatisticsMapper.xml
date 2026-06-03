@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.statistics.mapper.StatisticsMapper">
+
+    <!-- ─────── ResultMap: 카테고리별 통계 ─────── -->
+    <resultMap id="CategoryStatItemMap"
+               type="com.cashbook.domain.statistics.dto.CategoryStatItem">
+        <result property="categoryId"    column="category_id"/>
+        <result property="categoryName"  column="category_name"/>
+        <result property="categoryIcon"  column="category_icon"/>
+        <result property="categoryColor" column="category_color"/>
+        <result property="amount"        column="amount"/>
+        <result property="ratio"         column="ratio"/>
+    </resultMap>
+
+    <!-- ─────── ResultMap: 월별 추이 ─────── -->
+    <resultMap id="TrendItemMap"
+               type="com.cashbook.domain.statistics.dto.TrendItem">
+        <result property="yearMonth"     column="year_month"/>
+        <result property="totalIncome"   column="total_income"/>
+        <result property="totalExpense"  column="total_expense"/>
+        <result property="balance"       column="balance"/>
+    </resultMap>
+
+    <!--
+        ═══════════════════════════════════════════════════════════════
+        카테고리별 지출 통계
+        ───────────────────────────────────────────────────────────────
+        ■ EXPENSE 타입 거래만 집계
+        ■ ratio: SUM(amount) / 전체합계 * 100 — 윈도우 함수 OVER() 사용
+          - NULLIF(전체합계, 0): 데이터 없을 때 0 나눗셈 방지
+          - ROUND(..., 2): 소수점 2자리
+        ■ 금액 내림차순 정렬 (상위 지출 카테고리 먼저)
+        ═══════════════════════════════════════════════════════════════
+    -->
+    <select id="findCategoryStats" resultMap="CategoryStatItemMap">
+        SELECT
+            c.id                                                         AS category_id,
+            c.name                                                       AS category_name,
+            c.icon                                                       AS category_icon,
+            c.color                                                      AS category_color,
+            SUM(t.amount)                                                AS amount,
+            ROUND(
+                SUM(t.amount) * 100.0
+                / NULLIF(SUM(SUM(t.amount)) OVER (), 0),
+                2
+            )                                                            AS ratio
+        FROM   transactions t
+        JOIN   categories   c ON c.id = t.category_id
+                              AND c.deleted_at IS NULL
+        WHERE  t.user_id     = #{userId}
+          AND  t.type        = 'EXPENSE'
+          AND  t.txn_date   BETWEEN #{startDate} AND #{endDate}
+          AND  t.deleted_at IS NULL
+        GROUP  BY c.id, c.name, c.icon, c.color
+        ORDER  BY amount DESC
+    </select>
+
+    <!--
+        ═══════════════════════════════════════════════════════════════
+        월별 수입/지출 추이 (차트용)
+        ───────────────────────────────────────────────────────────────
+        ■ generate_series 로 startDate ~ endDate 사이 모든 월 생성
+          → 거래가 없는 달도 income=0, expense=0 으로 포함
+        ■ LEFT JOIN stats 로 실제 집계와 결합
+        ■ yearMonth ASC 정렬 (시간 순서)
+        ═══════════════════════════════════════════════════════════════
+    -->
+    <select id="findMonthlyTrend" resultMap="TrendItemMap">
+        WITH month_series AS (
+            SELECT TO_CHAR(m::date, 'YYYY-MM') AS year_month
+            FROM   generate_series(
+                       DATE_TRUNC('month', #{startDate}::date),
+                       DATE_TRUNC('month', #{endDate}::date),
+                       '1 month'::interval
+                   ) AS m
+        ),
+        monthly_stats AS (
+            SELECT
+                TO_CHAR(txn_date, 'YYYY-MM')                              AS year_month,
+                COALESCE(SUM(CASE WHEN type = 'INCOME'
+                                  THEN amount ELSE 0 END), 0)             AS total_income,
+                COALESCE(SUM(CASE WHEN type = 'EXPENSE'
+                                  THEN amount ELSE 0 END), 0)             AS total_expense
+            FROM   transactions
+            WHERE  user_id     = #{userId}
+              AND  txn_date   BETWEEN #{startDate} AND #{endDate}
+              AND  deleted_at IS NULL
+            GROUP  BY TO_CHAR(txn_date, 'YYYY-MM')
+        )
+        SELECT
+            ms.year_month,
+            COALESCE(st.total_income,   0)                                AS total_income,
+            COALESCE(st.total_expense,  0)                                AS total_expense,
+            COALESCE(st.total_income,   0)
+            - COALESCE(st.total_expense, 0)                               AS balance
+        FROM   month_series  ms
+        LEFT   JOIN monthly_stats st ON st.year_month = ms.year_month
+        ORDER  BY ms.year_month ASC
+    </select>
+
+</mapper>

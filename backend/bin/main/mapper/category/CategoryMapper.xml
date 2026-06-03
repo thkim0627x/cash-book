@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.category.mapper.CategoryMapper">
+
+    <!-- ─────── ResultMap: 응답 DTO ─────── -->
+    <resultMap id="CategoryResponseMap" type="com.cashbook.domain.category.dto.CategoryResponse">
+        <id     property="id"        column="id"/>
+        <result property="name"      column="name"/>
+        <result property="type"      column="type"/>
+        <result property="icon"      column="icon"/>
+        <result property="color"     column="color"/>
+        <result property="isDefault" column="is_default"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <!-- ─────── ResultMap: 엔티티 (소유권 검사용) ─────── -->
+    <resultMap id="CategoryEntityMap" type="com.cashbook.domain.category.entity.Category">
+        <id     property="id"        column="id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="name"      column="name"/>
+        <result property="type"      column="type"/>
+        <result property="icon"      column="icon"/>
+        <result property="color"     column="color"/>
+        <result property="isDefault" column="is_default"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <!-- ─────── 기본 + 내 카테고리 목록 ─────── -->
+    <select id="findByUserIdOrDefault" resultMap="CategoryResponseMap">
+        SELECT id, name, type, icon, color, is_default, sort_order
+        FROM   categories
+        WHERE  deleted_at IS NULL
+          AND  (
+              user_id IS NULL
+              OR user_id = #{userId}
+          )
+        ORDER BY is_default DESC,
+                 type,
+                 sort_order ASC,
+                 id ASC
+    </select>
+
+    <!-- ─────── 단건 조회 (엔티티) ─────── -->
+    <select id="findById" resultMap="CategoryEntityMap">
+        SELECT id, user_id, name, type, icon, color,
+               is_default, sort_order, created_at, updated_at, deleted_at
+        FROM   categories
+        WHERE  id         = #{id}
+          AND  deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <!-- ─────── 동일 이름+타입 중복 체크 ─────── -->
+    <select id="countByUserIdAndNameAndType" resultType="int">
+        SELECT COUNT(*)
+        FROM   categories
+        WHERE  user_id    = #{userId}
+          AND  name       = #{name}
+          AND  type       = #{type}
+          AND  deleted_at IS NULL
+    </select>
+
+    <!-- ─────── 커스텀 카테고리 생성 ─────── -->
+    <insert id="insert"
+            parameterType="com.cashbook.domain.category.entity.Category"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+        VALUES (#{userId}, #{name}, #{type}, #{icon}, #{color}, FALSE, #{sortOrder})
+    </insert>
+
+    <!-- ─────── 커스텀 카테고리 수정 ─────── -->
+    <update id="update" parameterType="com.cashbook.domain.category.entity.Category">
+        UPDATE categories
+        SET    name       = #{name},
+               icon       = #{icon},
+               color      = #{color},
+               sort_order = #{sortOrder},
+               updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  is_default = FALSE
+          AND  deleted_at IS NULL
+    </update>
+
+    <!-- ─────── 커스텀 카테고리 Soft Delete ─────── -->
+    <update id="softDelete">
+        UPDATE categories
+        SET    deleted_at = NOW(),
+               updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  is_default = FALSE
+          AND  deleted_at IS NULL
+    </update>
+
+</mapper>

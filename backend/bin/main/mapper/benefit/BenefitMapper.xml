@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.benefit.mapper.BenefitMapper">
+
+    <!-- ─────── ResultMap: 목록 ─────── -->
+    <resultMap id="BenefitResponseMap"
+               type="com.cashbook.domain.benefit.dto.BenefitResponse">
+        <id     property="id"           column="id"/>
+        <result property="title"        column="title"/>
+        <result property="category"     column="category"/>
+        <result property="targetAgeMin" column="target_age_min"/>
+        <result property="targetAgeMax" column="target_age_max"/>
+        <result property="applyUrl"     column="apply_url"/>
+        <result property="deadline"     column="deadline"/>
+        <result property="source"       column="source"/>
+        <result property="expired"      column="expired"/>
+    </resultMap>
+
+    <!-- ─────── ResultMap: 상세 ─────── -->
+    <resultMap id="BenefitDetailMap"
+               type="com.cashbook.domain.benefit.dto.BenefitDetailResponse">
+        <id     property="id"           column="id"/>
+        <result property="title"        column="title"/>
+        <result property="category"     column="category"/>
+        <result property="targetAgeMin" column="target_age_min"/>
+        <result property="targetAgeMax" column="target_age_max"/>
+        <result property="description"  column="description"/>
+        <result property="applyUrl"     column="apply_url"/>
+        <result property="deadline"     column="deadline"/>
+        <result property="source"       column="source"/>
+        <result property="expired"      column="expired"/>
+        <result property="createdAt"    column="created_at"/>
+    </resultMap>
+
+    <!--
+        ─────────────────────────────────────────────────────────────
+        공통 WHERE 절 (재사용)
+        ─────────────────────────────────────────────────────────────
+        - Soft Delete 제외
+        - category 필터 (있을 때만)
+        - age 필터 (있을 때만, -1은 birth_year 미등록 → 건너뜀)
+        - includeExpired=false → 마감 미경과만
+        ─────────────────────────────────────────────────────────────
+    -->
+    <sql id="whereClause">
+        WHERE b.deleted_at IS NULL
+        <if test="category != null and category != ''">
+            AND b.category = #{category}
+        </if>
+        <if test="age != null and age > 0">
+            AND (b.target_age_min IS NULL OR b.target_age_min &lt;= #{age})
+            AND (b.target_age_max IS NULL OR b.target_age_max &gt;= #{age})
+        </if>
+        <if test="includeExpired == false">
+            AND (b.deadline IS NULL OR b.deadline &gt;= CURRENT_DATE)
+        </if>
+    </sql>
+
+    <!-- ─────── 혜택 목록 조회 ─────── -->
+    <!--
+        expired: SQL CASE WHEN 으로 직접 계산
+        → deadline IS NOT NULL AND deadline < CURRENT_DATE 이면 true
+    -->
+    <select id="findAll" resultMap="BenefitResponseMap">
+        SELECT
+            b.id,
+            b.title,
+            b.category,
+            b.target_age_min,
+            b.target_age_max,
+            b.apply_url,
+            b.deadline,
+            b.source,
+            (b.deadline IS NOT NULL AND b.deadline &lt; CURRENT_DATE) AS expired
+        FROM   benefits b
+        <include refid="whereClause"/>
+        ORDER  BY
+            (b.deadline IS NULL) ASC,        -- 마감 있는 혜택 먼저
+            b.deadline ASC NULLS LAST,       -- 임박 순
+            b.id DESC
+        LIMIT  #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <!-- ─────── 목록 총 건수 ─────── -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM   benefits b
+        <include refid="whereClause"/>
+    </select>
+
+    <!-- ─────── 혜택 상세 ─────── -->
+    <select id="findById" resultMap="BenefitDetailMap">
+        SELECT
+            b.id,
+            b.title,
+            b.category,
+            b.target_age_min,
+            b.target_age_max,
+            b.description,
+            b.apply_url,
+            b.deadline,
+            b.source,
+            (b.deadline IS NOT NULL AND b.deadline &lt; CURRENT_DATE) AS expired,
+            b.created_at
+        FROM   benefits b
+        WHERE  b.id         = #{id}
+          AND  b.deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <!--
+        ─────────────────────────────────────────────────────────────
+        조건 기반 추천 목록 (상위 20건)
+        ─────────────────────────────────────────────────────────────
+        ■ 마감 미경과 혜택만 포함
+        ■ age = -1 → birth_year 미등록 → 나이 필터 건너뜀
+        ■ 정렬: 마감 있는 것 먼저(임박 순) → 상시 접수 순
+        ─────────────────────────────────────────────────────────────
+    -->
+    <select id="findRecommended" resultMap="BenefitResponseMap">
+        SELECT
+            b.id,
+            b.title,
+            b.category,
+            b.target_age_min,
+            b.target_age_max,
+            b.apply_url,
+            b.deadline,
+            b.source,
+            FALSE AS expired   -- 추천 목록은 항상 미만료
+        FROM   benefits b
+        WHERE  b.deleted_at IS NULL
+          AND  (b.deadline IS NULL OR b.deadline &gt;= CURRENT_DATE)
+          <if test="age > 0">
+              AND (b.target_age_min IS NULL OR b.target_age_min &lt;= #{age})
+              AND (b.target_age_max IS NULL OR b.target_age_max &gt;= #{age})
+          </if>
+        ORDER  BY
+            (b.deadline IS NULL) ASC,
+            b.deadline ASC NULLS LAST,
+            b.id DESC
+        LIMIT  20
+    </select>
+
+</mapper>
