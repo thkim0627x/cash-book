@@ -43,7 +43,13 @@ export function LoginForm() {
       if (res.success) {
         // 토큰 우선 저장 (임시 user) → 곧바로 me()로 정확한 정보 교체
         setAuth(
-          { id: 0, email: data.email, name: data.email.split('@')[0], birthYear: null, role: 'USER' },
+          {
+            id: 0,
+            email: data.email,
+            name: data.email.split('@')[0],
+            birthYear: null,
+            role: 'USER',
+          },
           res.data.accessToken,
           res.data.refreshToken
         )
@@ -60,7 +66,9 @@ export function LoginForm() {
       }
     } catch (e: unknown) {
       const axiosError = e as { response?: { data?: { message?: string } } }
-      setServerError(axiosError.response?.data?.message || '로그인 중 오류가 발생했습니다.')
+      setServerError(
+        axiosError.response?.data?.message || '로그인 중 오류가 발생했습니다.'
+      )
     } finally {
       setLoading(false)
     }
@@ -77,12 +85,19 @@ export function LoginForm() {
         p: 2,
       }}
     >
-      <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 4, p: { xs: 2, sm: 4 } }}>
+      <Card
+        sx={{
+          maxWidth: 420,
+          width: '100%',
+          borderRadius: 4,
+          p: { xs: 2, sm: 4 },
+        }}
+      >
         <CardContent sx={{ p: 0 }}>
           {/* 로고 영역 */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Typography variant="h5" color="primary" fontWeight={700}>
-              편한가계부
+              PlanDay
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               스마트한 가계부 관리를 시작하세요
@@ -105,7 +120,10 @@ export function LoginForm() {
               helperText={errors.email?.message}
               {...register('email', {
                 required: '이메일을 입력해주세요.',
-                pattern: { value: /\S+@\S+\.\S+/, message: '올바른 이메일 형식이 아닙니다.' },
+                pattern: {
+                  value: /\S+@\S+\.\S+/,
+                  message: '올바른 이메일 형식이 아닙니다.',
+                },
               })}
             />
 
@@ -120,7 +138,11 @@ export function LoginForm() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowPw((v) => !v)} edge="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowPw((v) => !v)}
+                      edge="end"
+                    >
                       {showPw ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </IconButton>
                   </InputAdornment>
@@ -128,7 +150,10 @@ export function LoginForm() {
               }}
               {...register('password', {
                 required: '비밀번호를 입력해주세요.',
-                minLength: { value: 6, message: '비밀번호는 6자 이상이어야 합니다.' },
+                minLength: {
+                  value: 6,
+                  message: '비밀번호는 6자 이상이어야 합니다.',
+                },
               })}
             />
 
@@ -140,7 +165,11 @@ export function LoginForm() {
               disabled={loading}
               sx={{ mb: 2 }}
             >
-              {loading ? <CircularProgress size={22} color="inherit" /> : '로그인'}
+              {loading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : (
+                '로그인'
+              )}
             </Button>
 
             <Divider sx={{ my: 2 }}>
@@ -160,7 +189,12 @@ export function LoginForm() {
             </Button>
 
             <Box sx={{ textAlign: 'center', mt: 2 }}>
-              <Link href="#" variant="body2" color="text.secondary" underline="hover">
+              <Link
+                href="#"
+                variant="body2"
+                color="text.secondary"
+                underline="hover"
+              >
                 비밀번호를 잊으셨나요?
               </Link>
             </Box>

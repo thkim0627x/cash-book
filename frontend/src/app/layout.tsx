@@ -4,11 +4,15 @@ import ThemeRegistry from '@/components/common/ThemeRegistry'
 import { GlobalToast } from '@/components/common/GlobalToast'
 
 export const metadata: Metadata = {
-  title: '편한가계부',
+  title: 'PlanDay',
   description: '스마트한 가계부 관리 서비스',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="ko">
       <body>
