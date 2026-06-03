@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5          # Railway 무료 플랜 DB 커넥션 절약
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never      # prod: 스키마 자동 생성 금지
+
+server:
+  port: ${PORT:8080}                # Railway가 PORT 환경변수를 주입함
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiry: 900000       # 15분 (ms)
+  refresh-token-expiry: 604800000   # 7일  (ms)
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+
+logging:
+  level:
+    com.cashbook: INFO
+    org.mybatis: WARN
+    org.springframework.batch: WARN

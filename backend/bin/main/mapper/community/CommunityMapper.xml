@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.community.mapper.CommunityMapper">
+
+    <!-- ─────────────── ResultMap ─────────────── -->
+
+    <resultMap id="PostEntityMap" type="com.cashbook.domain.community.entity.CommunityPost">
+        <id     property="id"           column="id"/>
+        <result property="userId"       column="user_id"/>
+        <result property="category"     column="category"/>
+        <result property="title"        column="title"/>
+        <result property="content"      column="content"/>
+        <result property="viewCount"    column="view_count"/>
+        <result property="likeCount"    column="like_count"/>
+        <result property="commentCount" column="comment_count"/>
+        <result property="isPinned"     column="is_pinned"/>
+        <result property="createdAt"    column="created_at"/>
+        <result property="updatedAt"    column="updated_at"/>
+        <result property="deletedAt"    column="deleted_at"/>
+    </resultMap>
+
+    <resultMap id="PostResponseMap" type="com.cashbook.domain.community.dto.PostResponse">
+        <id     property="id"           column="id"/>
+        <result property="category"     column="category"/>
+        <result property="title"        column="title"/>
+        <result property="viewCount"    column="view_count"/>
+        <result property="likeCount"    column="like_count"/>
+        <result property="commentCount" column="comment_count"/>
+        <result property="isPinned"     column="is_pinned"/>
+        <result property="authorId"     column="author_id"/>
+        <result property="authorName"   column="author_name"/>
+        <result property="createdAt"    column="created_at"/>
+    </resultMap>
+
+    <resultMap id="PostDetailMap" type="com.cashbook.domain.community.dto.PostDetailResponse">
+        <id     property="id"           column="id"/>
+        <result property="category"     column="category"/>
+        <result property="title"        column="title"/>
+        <result property="content"      column="content"/>
+        <result property="viewCount"    column="view_count"/>
+        <result property="likeCount"    column="like_count"/>
+        <result property="commentCount" column="comment_count"/>
+        <result property="isPinned"     column="is_pinned"/>
+        <result property="authorId"     column="author_id"/>
+        <result property="authorName"   column="author_name"/>
+        <result property="isLiked"      column="is_liked"/>
+        <result property="createdAt"    column="created_at"/>
+        <result property="updatedAt"    column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="CommentEntityMap" type="com.cashbook.domain.community.entity.CommunityComment">
+        <id     property="id"        column="id"/>
+        <result property="postId"    column="post_id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="content"   column="content"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <resultMap id="CommentResponseMap" type="com.cashbook.domain.community.dto.CommentResponse">
+        <id     property="id"         column="id"/>
+        <result property="postId"     column="post_id"/>
+        <result property="authorId"   column="author_id"/>
+        <result property="authorName" column="author_name"/>
+        <result property="content"    column="content"/>
+        <result property="createdAt"  column="created_at"/>
+    </resultMap>
+
+    <!-- ─────────────── Post ─────────────── -->
+
+    <insert id="insertPost"
+            parameterType="com.cashbook.domain.community.entity.CommunityPost"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO community_posts (user_id, category, title, content)
+        VALUES (#{userId}, #{category}, #{title}, #{content})
+    </insert>
+
+    <!-- 단순 엔티티 조회 (소유권/존재 확인용) -->
+    <select id="findPostById" resultMap="PostEntityMap">
+        SELECT id, user_id, category, title, content,
+               view_count, like_count, comment_count, is_pinned,
+               created_at, updated_at, deleted_at
+        FROM   community_posts
+        WHERE  id = #{id}
+          AND  deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <!--
+        게시글 상세 조회:
+        - users JOIN으로 author_name
+        - isLiked: userId 비null + EXISTS 서브쿼리
+    -->
+    <select id="findPostDetailById" resultMap="PostDetailMap">
+        SELECT
+            p.id,
+            p.category,
+            p.title,
+            p.content,
+            p.view_count,
+            p.like_count,
+            p.comment_count,
+            p.is_pinned,
+            p.user_id AS author_id,
+            u.name    AS author_name,
+            (
+                #{userId} IS NOT NULL
+                AND EXISTS (
+                    SELECT 1 FROM community_likes
+                    WHERE post_id = p.id AND user_id = #{userId}
+                )
+            )         AS is_liked,
+            p.created_at,
+            p.updated_at
+        FROM   community_posts p
+        JOIN   users u ON u.id = p.user_id AND u.deleted_at IS NULL
+        WHERE  p.id         = #{id}
+          AND  p.deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <!--
+        게시글 목록:
+        핀고정(is_pinned DESC) → created_at DESC
+        category 필터 optional
+    -->
+    <select id="findPosts" resultMap="PostResponseMap">
+        SELECT
+            p.id,
+            p.category,
+            p.title,
+            p.view_count,
+            p.like_count,
+            p.comment_count,
+            p.is_pinned,
+            p.user_id AS author_id,
+            u.name    AS author_name,
+            p.created_at
+        FROM   community_posts p
+        JOIN   users u ON u.id = p.user_id AND u.deleted_at IS NULL
+        WHERE  p.deleted_at IS NULL
+        <if test="category != null and category != ''">
+            AND p.category = #{category}
+        </if>
+        ORDER  BY p.is_pinned DESC, p.created_at DESC
+        LIMIT  #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <select id="countPosts" resultType="long">
+        SELECT COUNT(*)
+        FROM   community_posts
+        WHERE  deleted_at IS NULL
+        <if test="category != null and category != ''">
+            AND category = #{category}
+        </if>
+    </select>
+
+    <update id="updatePost">
+        UPDATE community_posts
+        SET    title      = #{title},
+               content    = #{content},
+               updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+    <update id="softDeletePost">
+        UPDATE community_posts
+        SET    deleted_at = NOW(), updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+    <update id="adminSoftDeletePost">
+        UPDATE community_posts
+        SET    deleted_at = NOW(), updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  deleted_at IS NULL
+    </update>
+
+    <update id="incrementViewCount">
+        UPDATE community_posts
+        SET    view_count = view_count + 1, updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  deleted_at IS NULL
+    </update>
+
+    <!-- 핀고정 토글: TRUE ↔ FALSE -->
+    <update id="pinToggle">
+        UPDATE community_posts
+        SET    is_pinned  = NOT is_pinned, updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  deleted_at IS NULL
+    </update>
+
+    <!-- ─────────────── Comment ─────────────── -->
+
+    <insert id="insertComment"
+            parameterType="com.cashbook.domain.community.entity.CommunityComment"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO community_comments (post_id, user_id, content)
+        VALUES (#{postId}, #{userId}, #{content})
+    </insert>
+
+    <select id="findCommentById" resultMap="CommentEntityMap">
+        SELECT id, post_id, user_id, content, created_at, updated_at, deleted_at
+        FROM   community_comments
+        WHERE  id = #{id}
+          AND  deleted_at IS NULL
+        LIMIT  1
+    </select>
+
+    <select id="findCommentsByPostId" resultMap="CommentResponseMap">
+        SELECT
+            c.id,
+            c.post_id,
+            c.user_id AS author_id,
+            u.name    AS author_name,
+            c.content,
+            c.created_at
+        FROM   community_comments c
+        JOIN   users u ON u.id = c.user_id AND u.deleted_at IS NULL
+        WHERE  c.post_id    = #{postId}
+          AND  c.deleted_at IS NULL
+        ORDER  BY c.created_at ASC
+        LIMIT  #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <select id="countCommentsByPostId" resultType="long">
+        SELECT COUNT(*)
+        FROM   community_comments
+        WHERE  post_id     = #{postId}
+          AND  deleted_at IS NULL
+    </select>
+
+    <update id="softDeleteComment">
+        UPDATE community_comments
+        SET    deleted_at = NOW(), updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  user_id    = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+    <update id="adminSoftDeleteComment">
+        UPDATE community_comments
+        SET    deleted_at = NOW(), updated_at = NOW()
+        WHERE  id         = #{id}
+          AND  deleted_at IS NULL
+    </update>
+
+    <update id="incrementCommentCount">
+        UPDATE community_posts
+        SET    comment_count = comment_count + 1, updated_at = NOW()
+        WHERE  id            = #{postId}
+          AND  deleted_at   IS NULL
+    </update>
+
+    <update id="decrementCommentCount">
+        UPDATE community_posts
+        SET    comment_count = GREATEST(comment_count - 1, 0), updated_at = NOW()
+        WHERE  id            = #{postId}
+          AND  deleted_at   IS NULL
+    </update>
+
+    <!-- ─────────────── Like ─────────────── -->
+
+    <!--
+        ON CONFLICT DO NOTHING: 이미 좋아요 누른 경우 0행 반환
+        → 서비스에서 0이면 deleteLike 호출 (토글)
+    -->
+    <insert id="insertLike">
+        INSERT INTO community_likes (post_id, user_id)
+        VALUES (#{postId}, #{userId})
+        ON CONFLICT (post_id, user_id) DO NOTHING
+    </insert>
+
+    <delete id="deleteLike">
+        DELETE FROM community_likes
+        WHERE  post_id = #{postId}
+          AND  user_id = #{userId}
+    </delete>
+
+    <!-- like_count를 실제 COUNT로 동기화 (race condition 안전) -->
+    <update id="syncLikeCount">
+        UPDATE community_posts
+        SET    like_count = (
+                   SELECT COUNT(*) FROM community_likes WHERE post_id = #{postId}
+               ),
+               updated_at = NOW()
+        WHERE  id         = #{postId}
+    </update>
+
+    <select id="findLikeCount" resultType="int">
+        SELECT like_count FROM community_posts WHERE id = #{postId}
+    </select>
+
+</mapper>

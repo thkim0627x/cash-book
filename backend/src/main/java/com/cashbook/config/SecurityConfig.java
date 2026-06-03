@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,12 +27,18 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // 인증 없이 접근 가능
                 .requestMatchers(
                     "/api/auth/login",
                     "/api/auth/register",
                     "/api/auth/reissue"
                 ).permitAll()
+                // 커뮤니티 게시글 조회 — 비로그인 허용
+                .requestMatchers(HttpMethod.GET, "/api/community/posts").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+                // 어드민 전용
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // 나머지 전부 인증 필요
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

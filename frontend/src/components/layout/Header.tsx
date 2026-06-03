@@ -22,6 +22,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { authService } from '@/services/auth.service'
 import { useToastStore } from '@/stores/toastStore'
 import { Logo } from './Logo'
+import { useQuery } from '@tanstack/react-query'
+import { notificationService } from '@/services/notification.service'
 
 export const HEADER_HEIGHT = 64
 
@@ -30,6 +32,16 @@ export function Header() {
   const { user, clearAuth } = useAuthStore()
   const showToast = useToastStore((s) => s.show)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  // 미읽음 알림 수 — 30초 폴링 (로그인 상태에서만)
+  const { data: unreadRes } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: notificationService.getUnreadCount,
+    refetchInterval: 30_000,
+    enabled: isAuthenticated,
+  })
+  const unreadCount = unreadRes?.data?.count ?? 0
 
   const handleLogout = async () => {
     setAnchorEl(null)
@@ -84,8 +96,8 @@ export function Header() {
 
         {/* 알림 */}
         <Tooltip title="알림">
-          <IconButton size="small">
-            <Badge badgeContent={3} color="error">
+          <IconButton size="small" onClick={() => router.push('/notifications')}>
+            <Badge badgeContent={unreadCount > 0 ? unreadCount : null} color="error" max={99}>
               <Bell size={20} />
             </Badge>
           </IconButton>

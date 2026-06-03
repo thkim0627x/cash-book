@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cashbook.domain.notification.mapper.NotificationMapper">
+
+    <!-- ─────────────── ResultMap ─────────────── -->
+
+    <resultMap id="NotificationEntityMap" type="com.cashbook.domain.notification.entity.Notification">
+        <id     property="id"        column="id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="type"      column="type"/>
+        <result property="title"     column="title"/>
+        <result property="message"   column="message"/>
+        <result property="isRead"    column="is_read"/>
+        <result property="link"      column="link"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="NotificationResponseMap"
+               type="com.cashbook.domain.notification.dto.NotificationResponse">
+        <id     property="id"        column="id"/>
+        <result property="type"      column="type"/>
+        <result property="title"     column="title"/>
+        <result property="message"   column="message"/>
+        <result property="isRead"    column="is_read"/>
+        <result property="link"      column="link"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- ─────────────── SQL ─────────────── -->
+
+    <insert id="insert" parameterType="com.cashbook.domain.notification.entity.Notification"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notifications (user_id, type, title, message, is_read, link)
+        VALUES (#{userId}, #{type}, #{title}, #{message}, #{isRead}, #{link})
+    </insert>
+
+    <!-- 최신순 30건 (읽음 + 미읽음 모두) -->
+    <select id="findByUserId" resultMap="NotificationResponseMap">
+        SELECT id, type, title, message, is_read, link, created_at
+        FROM   notifications
+        WHERE  user_id = #{userId}
+        ORDER  BY created_at DESC
+        LIMIT  30
+    </select>
+
+    <select id="findById" resultMap="NotificationEntityMap">
+        SELECT id, user_id, type, title, message, is_read, link, created_at
+        FROM   notifications
+        WHERE  id      = #{id}
+          AND  user_id = #{userId}
+        LIMIT  1
+    </select>
+
+    <!-- 단건 읽음 처리 (본인 소유 검증 포함) -->
+    <update id="markAsRead">
+        UPDATE notifications
+        SET    is_read = TRUE
+        WHERE  id      = #{id}
+          AND  user_id = #{userId}
+          AND  is_read = FALSE
+    </update>
+
+    <!-- 전체 읽음 처리 -->
+    <update id="markAllAsRead">
+        UPDATE notifications
+        SET    is_read = TRUE
+        WHERE  user_id = #{userId}
+          AND  is_read = FALSE
+    </update>
+
+    <!-- 미읽음 개수 (배지용 — 부분 인덱스 활용) -->
+    <select id="countUnread" resultType="long">
+        SELECT COUNT(*)
+        FROM   notifications
+        WHERE  user_id = #{userId}
+          AND  is_read = FALSE
+    </select>
+
+</mapper>

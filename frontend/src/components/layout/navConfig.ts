@@ -7,6 +7,8 @@ import {
   Gift,
   Gear,
   DotsThreeOutline,
+  ChatTeardropDots,
+  Bell,
   type Icon,
 } from '@phosphor-icons/react'
 
@@ -24,6 +26,8 @@ export const SIDEBAR_NAV: NavItem[] = [
   { label: '예산', icon: Wallet, path: '/budget' },
   { label: '통계', icon: ChartBar, path: '/statistics' },
   { label: '청년혜택', icon: Gift, path: '/benefits' },
+  { label: '커뮤니티', icon: ChatTeardropDots, path: '/community' },
+  { label: '알림', icon: Bell, path: '/notifications' },
   { label: '설정', icon: Gear, path: '/settings' },
 ]
 
