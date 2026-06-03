@@ -78,7 +78,9 @@ export function RegisterForm() {
       }
     } catch (e: unknown) {
       const axiosError = e as { response?: { data?: { message?: string } } }
-      setServerError(axiosError.response?.data?.message || '회원가입 중 오류가 발생했습니다.')
+      setServerError(
+        axiosError.response?.data?.message || '회원가입 중 오류가 발생했습니다.'
+      )
     } finally {
       setLoading(false)
     }
@@ -95,14 +97,21 @@ export function RegisterForm() {
         p: 2,
       }}
     >
-      <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 4, p: { xs: 2, sm: 4 } }}>
+      <Card
+        sx={{
+          maxWidth: 420,
+          width: '100%',
+          borderRadius: 4,
+          p: { xs: 2, sm: 4 },
+        }}
+      >
         <CardContent sx={{ p: 0 }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Typography variant="h5" color="primary" fontWeight={700}>
               회원가입
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              편한가계부에 오신 것을 환영합니다
+              PlanDay에 오신 것을 환영합니다
             </Typography>
           </Box>
 
@@ -121,7 +130,10 @@ export function RegisterForm() {
               helperText={errors.name?.message}
               {...register('name', {
                 required: '이름을 입력해주세요.',
-                maxLength: { value: 20, message: '이름은 20자 이하여야 합니다.' },
+                maxLength: {
+                  value: 20,
+                  message: '이름은 20자 이하여야 합니다.',
+                },
               })}
             />
 
@@ -133,7 +145,10 @@ export function RegisterForm() {
               helperText={errors.email?.message}
               {...register('email', {
                 required: '이메일을 입력해주세요.',
-                pattern: { value: /\S+@\S+\.\S+/, message: '올바른 이메일 형식이 아닙니다.' },
+                pattern: {
+                  value: /\S+@\S+\.\S+/,
+                  message: '올바른 이메일 형식이 아닙니다.',
+                },
               })}
             />
 
@@ -147,7 +162,11 @@ export function RegisterForm() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowPw((v) => !v)} edge="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowPw((v) => !v)}
+                      edge="end"
+                    >
                       {showPw ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </IconButton>
                   </InputAdornment>
@@ -155,7 +174,10 @@ export function RegisterForm() {
               }}
               {...register('password', {
                 required: '비밀번호를 입력해주세요.',
-                minLength: { value: 8, message: '비밀번호는 8자 이상이어야 합니다.' },
+                minLength: {
+                  value: 8,
+                  message: '비밀번호는 8자 이상이어야 합니다.',
+                },
               })}
             />
             {password && (
@@ -166,7 +188,10 @@ export function RegisterForm() {
                   color={getStrengthColor(pwStrength)}
                   sx={{ height: 4, borderRadius: 2 }}
                 />
-                <Typography variant="caption" color={`${getStrengthColor(pwStrength)}.main`}>
+                <Typography
+                  variant="caption"
+                  color={`${getStrengthColor(pwStrength)}.main`}
+                >
                   {pwStrength < 50 ? '약함' : pwStrength < 75 ? '보통' : '강함'}
                 </Typography>
               </Box>
@@ -187,14 +212,19 @@ export function RegisterForm() {
                       onClick={() => setShowPwConfirm((v) => !v)}
                       edge="end"
                     >
-                      {showPwConfirm ? <EyeSlash size={18} /> : <Eye size={18} />}
+                      {showPwConfirm ? (
+                        <EyeSlash size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
               {...register('passwordConfirm', {
                 required: '비밀번호 확인을 입력해주세요.',
-                validate: (val) => val === password || '비밀번호가 일치하지 않습니다.',
+                validate: (val) =>
+                  val === password || '비밀번호가 일치하지 않습니다.',
               })}
             />
 
@@ -207,7 +237,10 @@ export function RegisterForm() {
               helperText={errors.birthYear?.message ?? '예: 1995'}
               {...register('birthYear', {
                 required: '출생연도를 입력해주세요.',
-                min: { value: 1900, message: '올바른 출생연도를 입력해주세요.' },
+                min: {
+                  value: 1900,
+                  message: '올바른 출생연도를 입력해주세요.',
+                },
                 max: {
                   value: new Date().getFullYear(),
                   message: '올바른 출생연도를 입력해주세요.',
@@ -223,7 +256,11 @@ export function RegisterForm() {
               disabled={loading}
               sx={{ mb: 2 }}
             >
-              {loading ? <CircularProgress size={22} color="inherit" /> : '가입하기'}
+              {loading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : (
+                '가입하기'
+              )}
             </Button>
 
             <Button
