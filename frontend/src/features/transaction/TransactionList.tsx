@@ -66,7 +66,8 @@ export function TransactionList({ transactions, onDelete, compact = false }: Tra
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#E8F5E9' : '#FFEBEE'),
+                bgcolor:
+                  txn.categoryColor ?? (txn.type === 'INCOME' ? 'success.light' : 'error.light'),
                 fontSize: '0.75rem',
               }}
             >

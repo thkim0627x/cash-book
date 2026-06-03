@@ -19,8 +19,16 @@ interface CategoryDonutChartProps {
 
 // 기본 팔레트 (categoryColor가 null일 때 순환 사용)
 const DEFAULT_COLORS = [
-  '#3F51B5', '#C62828', '#2E7D32', '#E65100', '#6A1B9A',
-  '#00838F', '#AD1457', '#558B2F', '#4527A0', '#F57F17',
+  '#3F51B5',
+  '#C62828',
+  '#2E7D32',
+  '#E65100',
+  '#6A1B9A',
+  '#00838F',
+  '#AD1457',
+  '#558B2F',
+  '#4527A0',
+  '#F57F17',
 ]
 
 function getColor(slice: CategorySlice, idx: number) {
@@ -54,7 +62,7 @@ function CustomTooltip({
         {d.amount.toLocaleString('ko-KR')}원
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        {' '}({d.percentage.toFixed(1)}%)
+        ({(d.percentage ?? 0).toFixed(1)}%)
       </Typography>
     </Box>
   )
@@ -71,7 +79,14 @@ export function CategoryDonutChart({
 
   if (loading) {
     return (
-      <Box sx={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box
+        sx={{
+          height: 240,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <Typography variant="body2" color="text.secondary">
           데이터 불러오는 중…
         </Typography>
@@ -81,7 +96,14 @@ export function CategoryDonutChart({
 
   if (data.length === 0) {
     return (
-      <Box sx={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box
+        sx={{
+          height: 240,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <Typography variant="body2" color="text.secondary">
           지출 데이터가 없습니다.
         </Typography>
@@ -94,7 +116,11 @@ export function CategoryDonutChart({
   const innerR = isMobile ? 44 : 56
 
   return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" spacing={2}>
+    <Stack
+      direction={{ xs: 'column', sm: 'row' }}
+      alignItems="center"
+      spacing={2}
+    >
       {/* 도넛 차트 */}
       <Box sx={{ position: 'relative', flexShrink: 0 }}>
         <ResponsiveContainer width={chartSize} height={chartSize}>
@@ -196,7 +222,7 @@ export function CategoryDonutChart({
                 color="error.main"
                 sx={{ flexShrink: 0 }}
               >
-                {slice.percentage.toFixed(1)}%
+                {(slice.percentage ?? 0).toFixed(1)}%
               </Typography>
             </Stack>
           ))}

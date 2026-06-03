@@ -11,7 +11,7 @@
 html,
 body {
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-  background-color: #fafafa;
+  /* 배경색은 MUI 테마(background.default)가 CssBaseline을 통해 제어 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -297,7 +297,9 @@ export default function TransactionsPage() {
                         sx={{
                           width: 36,
                           height: 36,
-                          bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#E8F5E9' : '#FFEBEE'),
+                          bgcolor:
+                            txn.categoryColor ??
+                            (txn.type === 'INCOME' ? 'success.light' : 'error.light'),
                           fontSize: '0.8rem',
                         }}
                       >
@@ -486,8 +488,9 @@ export default function TransactionsPage() {
         </Fab>
       )}
 
-      {/* 거래 등록/수정 모달 */}
+      {/* 거래 등록/수정 모달 — key로 open/editTarget 변경 시 폼 초기값 반영 */}
       <TransactionForm
+        key={`${editTarget?.id ?? 'new'}-${formOpen}`}
         open={formOpen}
         onClose={handleFormClose}
         defaultYear={year}

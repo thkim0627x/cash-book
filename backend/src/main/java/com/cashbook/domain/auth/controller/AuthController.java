@@ -4,6 +4,7 @@ import com.cashbook.common.ApiResponse;
 import com.cashbook.domain.auth.dto.LoginRequest;
 import com.cashbook.domain.auth.dto.LoginResponse;
 import com.cashbook.domain.auth.dto.RegisterRequest;
+import com.cashbook.domain.auth.dto.ReissueResponse;
 import com.cashbook.domain.auth.dto.UserResponse;
 import com.cashbook.domain.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -32,6 +33,17 @@ public class AuthController {
     public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest req) {
         LoginResponse response = authService.login(req);
         return ApiResponse.ok("로그인 성공", response);
+    }
+
+    /**
+     * POST /api/auth/reissue — Access Token 재발급
+     * Refresh-Token 헤더로 Refresh Token 전달.
+     * 무효/만료 시 401.
+     */
+    @PostMapping("/reissue")
+    public ApiResponse<ReissueResponse> reissue(
+            @RequestHeader(value = "Refresh-Token", required = false) String refreshToken) {
+        return ApiResponse.ok("토큰이 재발급되었습니다.", authService.reissue(refreshToken));
     }
 
     /** GET /api/auth/me — 현재 로그인 유저 정보 조회 (인증 필요) */

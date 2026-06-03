@@ -403,3 +403,110 @@ Authorization: Bearer {{accessToken}}
 {
   "incomeLevel": "VERY_LOW"
 }
+
+### ══════════════════════════════════════════
+### 토큰 재발급 + 회원정보 수정 (MVP 마무리)
+### ══════════════════════════════════════════
+
+### ──────────────────────────────────────────
+### 42. Access Token 재발급 (정상)
+###     로그인(#2)에서 저장된 {{refreshToken}} 사용
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/reissue
+Refresh-Token: {{refreshToken}}
+
+> {%
+  client.test("Reissue success", function() {
+    client.assert(response.status === 200, "Status should be 200");
+    client.assert(response.body.data.accessToken !== undefined, "New access token should exist");
+  });
+  // 재발급된 토큰으로 갱신
+  client.global.set("accessToken", response.body.data.accessToken);
+%}
+
+### ──────────────────────────────────────────
+### 43. 재발급 — 잘못된 Refresh Token (401 기대)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/reissue
+Refresh-Token: invalid.refresh.token
+
+### ──────────────────────────────────────────
+### 44. 재발급 — Refresh-Token 헤더 누락 (401 기대)
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/reissue
+
+### ──────────────────────────────────────────
+### 45. 회원 정보 수정 (name, birth_year)
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/users/me
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "홍길동(수정)",
+  "birthYear": 1999
+}
+
+### ──────────────────────────────────────────
+### 46. 수정 결과 확인 (me 조회)
+### ──────────────────────────────────────────
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+### ──────────────────────────────────────────
+### 47. 회원 정보 수정 — 이름 누락 (400 기대)
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/users/me
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "birthYear": 2001
+}
+
+### ──────────────────────────────────────────
+### 48. 비밀번호 변경 (현재 비밀번호 확인 후)
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/users/me/password
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "currentPassword": "password123",
+  "newPassword": "newpassword456"
+}
+
+### ──────────────────────────────────────────
+### 49. 비밀번호 변경 — 현재 비밀번호 불일치 (400 기대)
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/users/me/password
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "currentPassword": "wrongpassword",
+  "newPassword": "anotherpass789"
+}
+
+### ──────────────────────────────────────────
+### 50. 변경된 비밀번호로 재로그인 (200 기대)
+###     #48 실행 후에만 성공
+### ──────────────────────────────────────────
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@cashbook.com",
+  "password": "newpassword456"
+}
+
+### ──────────────────────────────────────────
+### 51. 인증 없이 회원정보 수정 시도 (401 기대)
+### ──────────────────────────────────────────
+PUT {{baseUrl}}/api/users/me
+Content-Type: {{contentType}}
+
+{
+  "name": "익명",
+  "birthYear": 2000
+}

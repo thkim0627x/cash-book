@@ -30,12 +30,18 @@ apiClient.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
 
+        // 토큰 재발급 — Refresh-Token 헤더로 전달
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/api/auth/reissue`,
-          { refreshToken }
+          null,
+          { headers: { 'Refresh-Token': refreshToken } }
         )
         const newAccessToken: string = res.data.data.accessToken
+        const newRefreshToken: string | undefined = res.data.data.refreshToken
         localStorage.setItem('accessToken', newAccessToken)
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken)
+        }
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
         return apiClient(originalRequest)
       } catch {

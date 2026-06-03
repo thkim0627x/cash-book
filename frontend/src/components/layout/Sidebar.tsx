@@ -1,126 +1,111 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Box,
   Drawer,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Box,
   Toolbar,
-  Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
-import {
-  House,
-  Receipt,
-  CalendarBlank,
-  Wallet,
-  ChartBar,
-  Tag,
-  Gear,
-  Gift,
-} from '@phosphor-icons/react'
+import { Headset } from '@phosphor-icons/react'
+import { SIDEBAR_NAV, isNavActive } from './navConfig'
 
-const DRAWER_WIDTH = 240
-const DRAWER_MINI = 64
-
-const navItems = [
-  { label: '대시보드', icon: House, path: '/dashboard' },
-  { label: '거래 내역', icon: Receipt, path: '/transactions' },
-  { label: '달력', icon: CalendarBlank, path: '/calendar' },
-  { label: '예산', icon: Wallet, path: '/budget' },
-  { label: '통계', icon: ChartBar, path: '/statistics' },
-  { label: '청년 혜택', icon: Gift, path: '/benefits' },
-  { label: '카테고리', icon: Tag, path: '/categories' },
-  { label: '설정', icon: Gear, path: '/settings' },
-]
+export const SIDEBAR_WIDTH_MD = 240
+export const SIDEBAR_WIDTH_SM = 72
 
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const theme = useTheme()
-  const isMd = useMediaQuery(theme.breakpoints.up('md'))
-  const isSm = useMediaQuery(theme.breakpoints.up('sm'))
-
-  if (!isSm) return null // xs: 사이드바 숨김
-
-  const mini = !isMd
-  const width = mini ? DRAWER_MINI : DRAWER_WIDTH
 
   return (
     <Drawer
       variant="permanent"
       sx={{
-        width,
+        // xs: 숨김 / sm: 72px / md: 240px (sx 반응형 — SSR 안전)
+        display: { xs: 'none', sm: 'block' },
+        width: { sm: SIDEBAR_WIDTH_SM, md: SIDEBAR_WIDTH_MD },
         flexShrink: 0,
         '& .MuiDrawer-paper': {
-          width,
+          width: { sm: SIDEBAR_WIDTH_SM, md: SIDEBAR_WIDTH_MD },
           boxSizing: 'border-box',
+          bgcolor: 'background.sidebar',
           borderRight: '1px solid',
-          borderColor: 'grey.200',
-          bgcolor: 'background.paper',
+          borderColor: 'divider',
           overflowX: 'hidden',
-          transition: 'width 0.2s',
         },
       }}
     >
-      <Toolbar sx={{ px: 2, minHeight: '64px !important' }}>
-        {!mini && (
-          <Typography
-            variant="h6"
-            color="primary"
-            fontWeight={700}
-            sx={{ cursor: 'pointer' }}
-            onClick={() => router.push('/dashboard')}
-          >
-            편한가계부
-          </Typography>
-        )}
-      </Toolbar>
+      {/* Header(fixed) 높이만큼 밀기 */}
+      <Toolbar sx={{ minHeight: '64px !important' }} />
 
-      <List sx={{ px: 1, pt: 0 }}>
-        {navItems.map(({ label, icon: Icon, path }) => {
-          const active = pathname === path || pathname.startsWith(path + '/')
-          return (
-            <ListItemButton
-              key={path}
-              onClick={() => router.push(path)}
-              sx={{
-                borderRadius: 2,
-                mb: 0.5,
-                minHeight: 44,
-                px: mini ? 1.5 : 2,
-                justifyContent: mini ? 'center' : 'flex-start',
-                bgcolor: active ? 'primary.light' : 'transparent',
-                color: active ? 'primary.dark' : 'text.secondary',
-                borderLeft: active ? '4px solid' : '4px solid transparent',
-                borderColor: active ? 'primary.main' : 'transparent',
-                '&:hover': {
-                  bgcolor: active ? 'primary.light' : 'action.hover',
-                },
-              }}
-            >
-              <ListItemIcon
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* 메인 메뉴 */}
+        <List sx={{ p: 1.5 }}>
+          {SIDEBAR_NAV.map(({ label, icon: Icon, path }) => {
+            const active = isNavActive(pathname, path)
+            return (
+              <ListItemButton
+                key={path}
+                selected={active}
+                onClick={() => router.push(path)}
                 sx={{
-                  minWidth: mini ? 0 : 36,
-                  color: 'inherit',
-                  justifyContent: 'center',
+                  mb: 0.5,
+                  minHeight: 44,
+                  px: { sm: 0, md: 1.5 },
+                  justifyContent: { sm: 'center', md: 'flex-start' },
                 }}
               >
-                <Icon size={22} weight={active ? 'bold' : 'regular'} />
-              </ListItemIcon>
-              {!mini && (
+                <ListItemIcon
+                  sx={{
+                    minWidth: { sm: 0, md: 36 },
+                    justifyContent: 'center',
+                    color: 'inherit',
+                  }}
+                >
+                  <Icon size={22} weight={active ? 'fill' : 'regular'} />
+                </ListItemIcon>
                 <ListItemText
                   primary={label}
-                  primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: active ? 600 : 400 }}
+                  sx={{
+                    display: { sm: 'none', md: 'block' },
+                    '& .MuiTypography-root': {
+                      fontSize: '0.875rem',
+                      fontWeight: active ? 600 : 500,
+                    },
+                  }}
                 />
-              )}
-            </ListItemButton>
-          )
-        })}
-      </List>
+              </ListItemButton>
+            )
+          })}
+        </List>
+
+        {/* 하단: 고객센터 */}
+        <Box sx={{ mt: 'auto', p: 1.5 }}>
+          <ListItemButton
+            sx={{
+              minHeight: 44,
+              px: { sm: 0, md: 1.5 },
+              justifyContent: { sm: 'center', md: 'flex-start' },
+              color: 'text.secondary',
+            }}
+          >
+            <ListItemIcon
+              sx={{ minWidth: { sm: 0, md: 36 }, justifyContent: 'center', color: 'inherit' }}
+            >
+              <Headset size={22} />
+            </ListItemIcon>
+            <ListItemText
+              primary="고객센터"
+              sx={{
+                display: { sm: 'none', md: 'block' },
+                '& .MuiTypography-root': { fontSize: '0.875rem', fontWeight: 500 },
+              }}
+            />
+          </ListItemButton>
+        </Box>
+      </Box>
     </Drawer>
   )
 }

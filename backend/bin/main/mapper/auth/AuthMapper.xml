@@ -57,10 +57,45 @@
                           created_at = NOW()
     </insert>
 
+    <!-- ─────── Refresh Token 조회 (재발급 검증) ─────── -->
+    <resultMap id="RefreshTokenResultMap" type="com.cashbook.domain.auth.entity.RefreshToken">
+        <id     property="id"        column="id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="token"     column="token"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findRefreshTokenByUserId" resultMap="RefreshTokenResultMap">
+        SELECT id, user_id, token, expires_at, created_at
+        FROM   refresh_tokens
+        WHERE  user_id = #{userId}
+        LIMIT  1
+    </select>
+
     <!-- ─────── Refresh Token 삭제 (로그아웃) ─────── -->
     <delete id="deleteRefreshTokenByUserId">
         DELETE FROM refresh_tokens
         WHERE  user_id = #{userId}
     </delete>
+
+    <!-- ─────── 회원 정보 수정 (name, birth_year) ─────── -->
+    <update id="updateProfile">
+        UPDATE users
+        SET    name       = #{name},
+               birth_year = #{birthYear},
+               updated_at = NOW()
+        WHERE  id         = #{userId}
+          AND  deleted_at IS NULL
+    </update>
+
+    <!-- ─────── 비밀번호 변경 ─────── -->
+    <update id="updatePassword">
+        UPDATE users
+        SET    password   = #{password},
+               updated_at = NOW()
+        WHERE  id         = #{userId}
+          AND  deleted_at IS NULL
+    </update>
 
 </mapper>

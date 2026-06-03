@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -69,6 +69,7 @@ export function TransactionForm({
     editTarget?.type ?? 'EXPENSE'
   )
 
+  // editTarget 기반 폼 초기값 (open/editTarget 변경 시 호출부 key로 remount)
   const {
     register,
     handleSubmit,
@@ -76,34 +77,20 @@ export function TransactionForm({
     reset,
     formState: { errors },
   } = useForm<TransactionFormValues>({
-    defaultValues: {
-      categoryId: '',
-      amount: '',
-      txnDate: todayString(),
-      memo: '',
-    },
+    defaultValues: editTarget
+      ? {
+          categoryId: String(editTarget.categoryId),
+          amount: String(editTarget.amount),
+          txnDate: editTarget.txnDate,
+          memo: editTarget.memo ?? '',
+        }
+      : {
+          categoryId: '',
+          amount: '',
+          txnDate: todayString(),
+          memo: '',
+        },
   })
-
-  // editTarget이 바뀔 때마다 폼 초기화
-  useEffect(() => {
-    if (editTarget) {
-      setTxnType(editTarget.type)
-      reset({
-        categoryId: String(editTarget.categoryId),
-        amount: String(editTarget.amount),
-        txnDate: editTarget.txnDate,
-        memo: editTarget.memo ?? '',
-      })
-    } else {
-      setTxnType('EXPENSE')
-      reset({
-        categoryId: '',
-        amount: '',
-        txnDate: todayString(),
-        memo: '',
-      })
-    }
-  }, [editTarget, reset])
 
   // 카테고리 목록
   const { data: categoriesRes } = useQuery({
@@ -178,7 +165,7 @@ export function TransactionForm({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 1,
-                color: txnType === 'INCOME' ? '#2E7D32' : '#C62828',
+                color: txnType === 'INCOME' ? 'success.main' : 'error.main',
                 fontWeight: 700,
               }}
             >
@@ -199,9 +186,9 @@ export function TransactionForm({
                 sx={{
                   fontWeight: 600,
                   '&.Mui-selected': {
-                    bgcolor: '#E8F5E9',
-                    color: '#2E7D32',
-                    borderColor: '#2E7D32',
+                    bgcolor: 'success.light',
+                    color: 'success.main',
+                    borderColor: 'success.main',
                   },
                 }}
               >
@@ -212,9 +199,9 @@ export function TransactionForm({
                 sx={{
                   fontWeight: 600,
                   '&.Mui-selected': {
-                    bgcolor: '#FFEBEE',
-                    color: '#C62828',
-                    borderColor: '#C62828',
+                    bgcolor: 'error.light',
+                    color: 'error.main',
+                    borderColor: 'error.main',
                   },
                 }}
               >

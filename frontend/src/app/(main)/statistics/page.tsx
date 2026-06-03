@@ -167,12 +167,12 @@ export default function StatisticsPage() {
               <Chip
                 size="small"
                 label="수입"
-                sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', fontWeight: 600, fontSize: 11 }}
+                sx={{ bgcolor: 'success.light', color: 'success.main', fontWeight: 600, fontSize: 11 }}
               />
               <Chip
                 size="small"
                 label="지출"
-                sx={{ bgcolor: '#FFEBEE', color: '#C62828', fontWeight: 600, fontSize: 11 }}
+                sx={{ bgcolor: 'error.light', color: 'error.main', fontWeight: 600, fontSize: 11 }}
               />
             </Stack>
           </Stack>

@@ -20,6 +20,14 @@ export const benefitService = {
     return res.data
   },
 
+  // 사용자 조건 기반 추천 혜택 (대시보드 배너용)
+  getRecommended: async (limit = 2): Promise<ApiResponse<Benefit[]>> => {
+    const res = await apiClient.get<ApiResponse<Benefit[]>>('/api/benefits/recommended', {
+      params: { limit },
+    })
+    return res.data
+  },
+
   getConditions: async (): Promise<ApiResponse<BenefitConditions | null>> => {
     const res = await apiClient.get<ApiResponse<BenefitConditions | null>>(
       '/api/benefits/conditions'

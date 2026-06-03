@@ -13,6 +13,7 @@ public enum ErrorCode {
 
     // 401
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않거나 만료된 Refresh Token입니다. 다시 로그인해 주세요."),
 
     // 403
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),

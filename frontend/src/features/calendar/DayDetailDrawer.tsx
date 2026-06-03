@@ -147,7 +147,7 @@ export function DayDetailDrawer({
                         height: 36,
                         bgcolor:
                           txn.categoryColor ??
-                          (txn.type === 'INCOME' ? '#E8F5E9' : '#FFEBEE'),
+                          (txn.type === 'INCOME' ? 'success.light' : 'error.light'),
                         fontSize: '0.8rem',
                       }}
                     >

@@ -1,5 +1,5 @@
 'use client'
-import { Grid, Card, CardContent, Box, Typography } from '@mui/material'
+import { Grid, Card, CardContent, Box, Typography, useTheme } from '@mui/material'
 import { TrendUp, TrendDown, Wallet } from '@phosphor-icons/react'
 import type { TransactionSummary } from '@/types/transaction'
 
@@ -7,50 +7,58 @@ interface SummaryCardsProps {
   summary: TransactionSummary
 }
 
-const cards = [
+type Tone = 'success' | 'error' | 'primary'
+
+const cards: {
+  key: 'income' | 'expense' | 'balance'
+  label: string
+  Icon: typeof TrendUp
+  tone: Tone
+  prefix: string
+  getValue: (s: TransactionSummary) => number
+}[] = [
   {
-    key: 'income' as const,
+    key: 'income',
     label: '이번달 수입',
     Icon: TrendUp,
-    color: 'success.main',
-    bg: '#E8F5E9',
+    tone: 'success',
     prefix: '+',
-    getValue: (s: TransactionSummary) => s.totalIncome,
+    getValue: (s) => s.totalIncome,
   },
   {
-    key: 'expense' as const,
+    key: 'expense',
     label: '이번달 지출',
     Icon: TrendDown,
-    color: 'error.main',
-    bg: '#FFEBEE',
+    tone: 'error',
     prefix: '-',
-    getValue: (s: TransactionSummary) => s.totalExpense,
+    getValue: (s) => s.totalExpense,
   },
   {
-    key: 'balance' as const,
+    key: 'balance',
     label: '잔액',
     Icon: Wallet,
-    color: 'primary.main',
-    bg: '#E8EAF6',
+    tone: 'primary',
     prefix: '',
-    getValue: (s: TransactionSummary) => s.balance,
+    getValue: (s) => s.balance,
   },
 ]
 
 export function SummaryCards({ summary }: SummaryCardsProps) {
+  const theme = useTheme()
+
   return (
     <Grid container spacing={2}>
-      {cards.map(({ key, label, Icon, color, bg, prefix, getValue }) => (
+      {cards.map(({ key, label, Icon, tone, prefix, getValue }) => (
         <Grid key={key} size={{ xs: 12, sm: 4 }}>
-          <Card sx={{ bgcolor: bg, boxShadow: 'none', border: 'none' }}>
+          <Card sx={{ bgcolor: `${tone}.light`, boxShadow: 'none', border: 'none' }}>
             <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Icon size={28} color={color as string} />
+                <Icon size={28} color={theme.palette[tone].main} />
                 <Typography variant="body2" color="text.secondary">
                   {label}
                 </Typography>
               </Box>
-              <Typography variant="h5" sx={{ color, fontWeight: 700 }}>
+              <Typography variant="h5" sx={{ color: `${tone}.main`, fontWeight: 700 }}>
                 {prefix}
                 {getValue(summary).toLocaleString('ko-KR')} 원
               </Typography>

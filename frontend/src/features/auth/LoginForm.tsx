@@ -24,7 +24,7 @@ import NextLink from 'next/link'
 
 export function LoginForm() {
   const router = useRouter()
-  const { setAuth } = useAuthStore()
+  const { setAuth, setUser } = useAuthStore()
   const [showPw, setShowPw] = useState(false)
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -41,13 +41,19 @@ export function LoginForm() {
     try {
       const res = await authService.login(data)
       if (res.success) {
-        // 백엔드가 user 정보도 함께 반환한다고 가정
-        // accessToken/refreshToken만 있으면 임시 user 세팅
+        // 토큰 우선 저장 (임시 user) → 곧바로 me()로 정확한 정보 교체
         setAuth(
           { id: 0, email: data.email, name: data.email.split('@')[0], birthYear: null, role: 'USER' },
           res.data.accessToken,
           res.data.refreshToken
         )
+        // 로그인 직후 실제 사용자 정보 로드
+        try {
+          const meRes = await authService.me()
+          if (meRes.success) setUser(meRes.data)
+        } catch {
+          // me 실패해도 로그인 자체는 성공 처리 (대시보드 진입)
+        }
         router.push('/dashboard')
       } else {
         setServerError(res.message || '로그인에 실패했습니다.')

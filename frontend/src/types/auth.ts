@@ -22,3 +22,13 @@ export interface User {
   birthYear: number | null
   role: string
 }
+
+export interface ProfileUpdateRequest {
+  name: string
+  birthYear: number | null
+}
+
+export interface PasswordChangeRequest {
+  currentPassword: string
+  newPassword: string
+}
