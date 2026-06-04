@@ -14,7 +14,7 @@ spring:
     job:
       enabled: false
     jdbc:
-      initialize-schema: never # prod: 스키마 자동 생성 금지
+      initialize-schema: always # 최초 부팅 시 BATCH_* 메타테이블 자동 생성 (1회 후 never 권장)
 
 server:
   port: ${PORT:8080} # Railway가 PORT 환경변수를 주입함
