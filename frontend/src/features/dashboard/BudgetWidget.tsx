@@ -46,11 +46,11 @@ export function BudgetWidget({ year, month }: BudgetWidgetProps) {
     }
   }
 
-  const totalLimit = budgets.reduce((s, b) => s + b.limitAmount, 0)
+  const totalLimit = budgets.reduce((s, b) => s + b.amount, 0)
   const totalUsed = budgets.reduce((s, b) => s + (expenseMap[b.categoryId] ?? 0), 0)
   const totalPct = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0
   const overCount = budgets.filter(
-    (b) => b.limitAmount > 0 && (expenseMap[b.categoryId] ?? 0) >= b.limitAmount
+    (b) => b.amount > 0 && (expenseMap[b.categoryId] ?? 0) >= b.amount
   ).length
 
   const barColor = totalPct >= 100 ? 'error' : totalPct >= 80 ? 'warning' : 'primary'
