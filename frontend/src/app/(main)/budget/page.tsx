@@ -72,7 +72,7 @@ export default function BudgetPage() {
 
     return budgets.map((b) => {
       const used = expenseMap[b.categoryId] ?? 0
-      const pct = b.limitAmount > 0 ? (used / b.limitAmount) * 100 : 0
+      const pct = b.amount > 0 ? (used / b.amount) * 100 : 0
       return {
         ...b,
         usedAmount: used,
@@ -84,7 +84,7 @@ export default function BudgetPage() {
 
   // ── 전체 요약 집계 ───────────────────────────────────────────────
   const totalSummary = useMemo(() => {
-    const totalLimit = budgetsWithUsage.reduce((s, b) => s + b.limitAmount, 0)
+    const totalLimit = budgetsWithUsage.reduce((s, b) => s + b.amount, 0)
     const totalUsed = budgetsWithUsage.reduce((s, b) => s + b.usedAmount, 0)
     const overCount = budgetsWithUsage.filter((b) => b.isOver).length
     const totalPct = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0

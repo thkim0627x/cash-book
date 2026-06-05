@@ -23,10 +23,10 @@ function getColor(pct: number): 'error' | 'warning' | 'primary' {
 }
 
 export function BudgetProgressBar({ budget, onEdit, onDelete }: BudgetProgressBarProps) {
-  const { categoryName, categoryColor, limitAmount, usedAmount, percentage, isOver } = budget
+  const { categoryName, categoryColor, amount, usedAmount, percentage, isOver } = budget
   const color = getColor(percentage)
   const displayPct = Math.min(percentage, 100)
-  const remaining = limitAmount - usedAmount
+  const remaining = amount - usedAmount
 
   return (
     <Box
@@ -77,7 +77,7 @@ export function BudgetProgressBar({ budget, onEdit, onDelete }: BudgetProgressBa
           </Stack>
           <Typography variant="caption" color="text.secondary">
             {usedAmount.toLocaleString('ko-KR')}원 /&nbsp;
-            {limitAmount.toLocaleString('ko-KR')}원
+            {amount.toLocaleString('ko-KR')}원
             &nbsp;
             <Typography
               component="span"

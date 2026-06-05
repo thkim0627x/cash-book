@@ -2,10 +2,14 @@ import apiClient from '@/lib/axios'
 import type { ApiResponse } from '@/types/common'
 import type { Budget, BudgetCreateRequest, BudgetUpdateRequest } from '@/types/budget'
 
+function toYearMonth(year: number, month: number) {
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+
 export const budgetService = {
   getList: async (year: number, month: number): Promise<ApiResponse<Budget[]>> => {
     const res = await apiClient.get<ApiResponse<Budget[]>>('/api/budgets', {
-      params: { year, month },
+      params: { year_month: toYearMonth(year, month) },
     })
     return res.data
   },

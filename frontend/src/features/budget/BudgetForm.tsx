@@ -25,7 +25,7 @@ import type { BudgetWithUsage } from '@/types/budget'
 
 interface BudgetFormValues {
   categoryId: string
-  limitAmount: string
+  amount: string
 }
 
 function formatNum(v: string): string {
@@ -42,9 +42,7 @@ interface BudgetFormProps {
   onClose: () => void
   year: number
   month: number
-  /** 수정 모드: 기존 예산 전달 */
   editTarget?: BudgetWithUsage | null
-  /** 이미 예산이 설정된 카테고리 ID 목록 (등록 모드에서 중복 방지) */
   existingCategoryIds: number[]
 }
 
@@ -61,28 +59,25 @@ export function BudgetForm({
   const queryClientInstance = useQueryClient()
 
   const {
-    register,
     handleSubmit,
     control,
     reset,
     formState: { errors },
   } = useForm<BudgetFormValues>({
-    defaultValues: { categoryId: '', limitAmount: '' },
+    defaultValues: { categoryId: '', amount: '' },
   })
 
-  // editTarget 변경 시 폼 초기화
   useEffect(() => {
     if (editTarget) {
       reset({
         categoryId: String(editTarget.categoryId),
-        limitAmount: formatNum(String(editTarget.limitAmount)),
+        amount: formatNum(String(editTarget.amount)),
       })
     } else {
-      reset({ categoryId: '', limitAmount: '' })
+      reset({ categoryId: '', amount: '' })
     }
   }, [editTarget, reset])
 
-  // EXPENSE 카테고리 목록
   const { data: catRes } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getAll,
@@ -90,7 +85,8 @@ export function BudgetForm({
   })
   const expenseCategories = (catRes?.data ?? []).filter((c) => c.type === 'EXPENSE')
 
-  // 등록 mutation
+  const yearMonth = `${year}-${String(month).padStart(2, '0')}`
+
   const { mutate: create, isPending: isCreating } = useMutation({
     mutationFn: budgetService.create,
     onSuccess: () => {
@@ -101,9 +97,8 @@ export function BudgetForm({
     onError: () => showToast('예산 등록에 실패했습니다.', 'error'),
   })
 
-  // 수정 mutation
   const { mutate: update, isPending: isUpdating } = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { limitAmount: number } }) =>
+    mutationFn: ({ id, data }: { id: number; data: { amount: number } }) =>
       budgetService.update(id, data),
     onSuccess: () => {
       queryClientInstance.invalidateQueries({ queryKey: ['budgets', year, month] })
@@ -116,25 +111,23 @@ export function BudgetForm({
   const isPending = isCreating || isUpdating
 
   const handleClose = () => {
-    reset({ categoryId: '', limitAmount: '' })
+    reset({ categoryId: '', amount: '' })
     onClose()
   }
 
   const onSubmit = (data: BudgetFormValues) => {
-    const amount = parseNum(data.limitAmount)
+    const amount = parseNum(data.amount)
     if (isEditMode && editTarget) {
-      update({ id: editTarget.id, data: { limitAmount: amount } })
+      update({ id: editTarget.id, data: { amount } })
     } else {
       create({
-        categoryId: Number(data.categoryId),
-        limitAmount: amount,
-        year,
-        month,
+        categoryId: Number(data.categoryId) || null,
+        amount,
+        yearMonth,
       })
     }
   }
 
-  // 이미 예산이 설정된 카테고리는 등록 시 제외
   const availableCategories = isEditMode
     ? expenseCategories
     : expenseCategories.filter((c) => !existingCategoryIds.includes(c.id))
@@ -145,7 +138,6 @@ export function BudgetForm({
 
       <DialogContent dividers>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
-          {/* 카테고리 — 수정 모드에서는 비활성 */}
           <Controller
             name="categoryId"
             control={control}
@@ -172,9 +164,8 @@ export function BudgetForm({
             )}
           />
 
-          {/* 예산 금액 */}
           <Controller
-            name="limitAmount"
+            name="amount"
             control={control}
             rules={{
               required: '예산 금액을 입력해주세요.',
@@ -192,8 +183,8 @@ export function BudgetForm({
                 inputMode="numeric"
                 fullWidth
                 autoFocus={isEditMode}
-                error={!!errors.limitAmount}
-                helperText={errors.limitAmount?.message}
+                error={!!errors.amount}
+                helperText={errors.amount?.message}
                 InputProps={{
                   endAdornment: <InputAdornment position="end">원</InputAdornment>,
                 }}
