@@ -7,43 +7,47 @@
     <!-- ─────── ResultMap: 목록 ─────── -->
     <resultMap id="BenefitResponseMap"
                type="com.cashbook.domain.benefit.dto.BenefitResponse">
-        <id     property="id"           column="id"/>
-        <result property="title"        column="title"/>
-        <result property="category"     column="category"/>
-        <result property="targetAgeMin" column="target_age_min"/>
-        <result property="targetAgeMax" column="target_age_max"/>
-        <result property="applyUrl"     column="apply_url"/>
-        <result property="deadline"     column="deadline"/>
-        <result property="source"       column="source"/>
-        <result property="expired"      column="expired"/>
+        <id     property="id"             column="id"/>
+        <result property="title"          column="title"/>
+        <result property="category"       column="category"/>
+        <result property="targetAgeMin"   column="target_age_min"/>
+        <result property="targetAgeMax"   column="target_age_max"/>
+        <result property="description"    column="description"/>
+        <result property="host"           column="host"/>
+        <result property="benefitSummary" column="benefit_summary"/>
+        <result property="targetIncome"   column="target_income"/>
+        <result property="targetRegion"   column="target_region"/>
+        <result property="applyUrl"       column="apply_url"/>
+        <result property="deadline"       column="deadline"/>
+        <result property="source"         column="source"/>
+        <result property="expired"        column="expired"/>
+        <result property="isNew"          column="is_new"/>
+        <result property="viewCount"      column="view_count"/>
     </resultMap>
 
     <!-- ─────── ResultMap: 상세 ─────── -->
     <resultMap id="BenefitDetailMap"
                type="com.cashbook.domain.benefit.dto.BenefitDetailResponse">
-        <id     property="id"           column="id"/>
-        <result property="title"        column="title"/>
-        <result property="category"     column="category"/>
-        <result property="targetAgeMin" column="target_age_min"/>
-        <result property="targetAgeMax" column="target_age_max"/>
-        <result property="description"  column="description"/>
-        <result property="applyUrl"     column="apply_url"/>
-        <result property="deadline"     column="deadline"/>
-        <result property="source"       column="source"/>
-        <result property="expired"      column="expired"/>
-        <result property="createdAt"    column="created_at"/>
+        <id     property="id"             column="id"/>
+        <result property="title"          column="title"/>
+        <result property="category"       column="category"/>
+        <result property="targetAgeMin"   column="target_age_min"/>
+        <result property="targetAgeMax"   column="target_age_max"/>
+        <result property="description"    column="description"/>
+        <result property="host"           column="host"/>
+        <result property="benefitSummary" column="benefit_summary"/>
+        <result property="targetIncome"   column="target_income"/>
+        <result property="targetRegion"   column="target_region"/>
+        <result property="applyUrl"       column="apply_url"/>
+        <result property="deadline"       column="deadline"/>
+        <result property="source"         column="source"/>
+        <result property="expired"        column="expired"/>
+        <result property="isNew"          column="is_new"/>
+        <result property="viewCount"      column="view_count"/>
+        <result property="createdAt"      column="created_at"/>
     </resultMap>
 
-    <!--
-        ─────────────────────────────────────────────────────────────
-        공통 WHERE 절 (재사용)
-        ─────────────────────────────────────────────────────────────
-        - Soft Delete 제외
-        - category 필터 (있을 때만)
-        - age 필터 (있을 때만, -1은 birth_year 미등록 → 건너뜀)
-        - includeExpired=false → 마감 미경과만
-        ─────────────────────────────────────────────────────────────
-    -->
+    <!-- 공통 WHERE 절 -->
     <sql id="whereClause">
         WHERE b.deleted_at IS NULL
         <if test="category != null and category != ''">
@@ -59,10 +63,6 @@
     </sql>
 
     <!-- ─────── 혜택 목록 조회 ─────── -->
-    <!--
-        expired: SQL CASE WHEN 으로 직접 계산
-        → deadline IS NOT NULL AND deadline < CURRENT_DATE 이면 true
-    -->
     <select id="findAll" resultMap="BenefitResponseMap">
         SELECT
             b.id,
@@ -70,15 +70,22 @@
             b.category,
             b.target_age_min,
             b.target_age_max,
+            b.description,
+            b.host,
+            b.benefit_summary,
+            b.target_income,
+            b.target_region,
             b.apply_url,
             b.deadline,
             b.source,
-            (b.deadline IS NOT NULL AND b.deadline &lt; CURRENT_DATE) AS expired
+            (b.deadline IS NOT NULL AND b.deadline &lt; CURRENT_DATE) AS expired,
+            (b.created_at &gt;= NOW() - INTERVAL '7 days')            AS is_new,
+            COALESCE(b.view_count, 0)                                  AS view_count
         FROM   benefits b
         <include refid="whereClause"/>
         ORDER  BY
-            (b.deadline IS NULL) ASC,        -- 마감 있는 혜택 먼저
-            b.deadline ASC NULLS LAST,       -- 임박 순
+            (b.deadline IS NULL) ASC,
+            b.deadline ASC NULLS LAST,
             b.id DESC
         LIMIT  #{limit}
         OFFSET #{offset}
@@ -100,10 +107,16 @@
             b.target_age_min,
             b.target_age_max,
             b.description,
+            b.host,
+            b.benefit_summary,
+            b.target_income,
+            b.target_region,
             b.apply_url,
             b.deadline,
             b.source,
             (b.deadline IS NOT NULL AND b.deadline &lt; CURRENT_DATE) AS expired,
+            (b.created_at &gt;= NOW() - INTERVAL '7 days')            AS is_new,
+            COALESCE(b.view_count, 0)                                  AS view_count,
             b.created_at
         FROM   benefits b
         WHERE  b.id         = #{id}
@@ -111,15 +124,7 @@
         LIMIT  1
     </select>
 
-    <!--
-        ─────────────────────────────────────────────────────────────
-        조건 기반 추천 목록 (상위 20건)
-        ─────────────────────────────────────────────────────────────
-        ■ 마감 미경과 혜택만 포함
-        ■ age = -1 → birth_year 미등록 → 나이 필터 건너뜀
-        ■ 정렬: 마감 있는 것 먼저(임박 순) → 상시 접수 순
-        ─────────────────────────────────────────────────────────────
-    -->
+    <!-- ─────── 조건 기반 추천 목록 ─────── -->
     <select id="findRecommended" resultMap="BenefitResponseMap">
         SELECT
             b.id,
@@ -127,10 +132,17 @@
             b.category,
             b.target_age_min,
             b.target_age_max,
+            b.description,
+            b.host,
+            b.benefit_summary,
+            b.target_income,
+            b.target_region,
             b.apply_url,
             b.deadline,
             b.source,
-            FALSE AS expired   -- 추천 목록은 항상 미만료
+            FALSE                                                       AS expired,
+            (b.created_at &gt;= NOW() - INTERVAL '7 days')            AS is_new,
+            COALESCE(b.view_count, 0)                                   AS view_count
         FROM   benefits b
         WHERE  b.deleted_at IS NULL
           AND  (b.deadline IS NULL OR b.deadline &gt;= CURRENT_DATE)
@@ -144,5 +156,43 @@
             b.id DESC
         LIMIT  20
     </select>
+
+    <!-- ─────── 외부 API 데이터 일괄 upsert ─────── -->
+    <insert id="batchUpsert" parameterType="list">
+        INSERT INTO benefits (
+            external_id, title, category, target_age_min, target_age_max,
+            description, host, benefit_summary, target_income, target_region,
+            apply_url, deadline, source
+        )
+        VALUES
+        <foreach collection="list" item="b" separator=",">
+        (
+            #{b.externalId}, #{b.title}, #{b.category}, #{b.targetAgeMin}, #{b.targetAgeMax},
+            #{b.description}, #{b.host}, #{b.benefitSummary}, #{b.targetIncome}, #{b.targetRegion},
+            #{b.applyUrl}, #{b.deadline}, #{b.source}
+        )
+        </foreach>
+        ON CONFLICT (external_id)
+        DO UPDATE SET
+            title          = EXCLUDED.title,
+            category       = EXCLUDED.category,
+            description    = EXCLUDED.description,
+            host           = EXCLUDED.host,
+            benefit_summary= EXCLUDED.benefit_summary,
+            target_income  = EXCLUDED.target_income,
+            target_region  = EXCLUDED.target_region,
+            apply_url      = EXCLUDED.apply_url,
+            deadline       = EXCLUDED.deadline,
+            updated_at     = NOW()
+    </insert>
+
+    <!-- ─────── 마감 지난 혜택 soft delete ─────── -->
+    <update id="softDeleteExpired">
+        UPDATE benefits
+        SET    deleted_at = NOW()
+        WHERE  deleted_at IS NULL
+          AND  deadline   IS NOT NULL
+          AND  deadline   &lt; CURRENT_DATE - INTERVAL '30 days'
+    </update>
 
 </mapper>

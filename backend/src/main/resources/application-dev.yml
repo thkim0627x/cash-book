@@ -8,6 +8,11 @@ spring:
     username: cashbook_user
     password: cashbook1234
     driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/init.sql
+      separator: ;
   devtools:
     restart:
       enabled: true
@@ -16,6 +21,10 @@ spring:
       enabled: false          # 서버 시작 시 Job 자동 실행 방지
     jdbc:
       initialize-schema: always  # Batch 메타 테이블 자동 생성 (dev)
+
+youth:
+  api:
+    key: ${YOUTH_API_KEY:}  # youth.go.kr 오픈 API 키 (미설정 시 외부 동기화 건너뜀)
 
 server:
   port: 8080
