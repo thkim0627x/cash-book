@@ -36,6 +36,16 @@ interface TransactionFormValues {
   memo: string
 }
 
+function formatNumber(value: string): string {
+  const digits = value.replace(/[^0-9]/g, '')
+  if (!digits) return ''
+  return Number(digits).toLocaleString('ko-KR')
+}
+
+function parseNumber(formatted: string): number {
+  return Number(formatted.replace(/[^0-9]/g, ''))
+}
+
 interface TransactionFormProps {
   open: boolean
   onClose: () => void
@@ -80,7 +90,7 @@ export function TransactionForm({
     defaultValues: editTarget
       ? {
           categoryId: String(editTarget.categoryId),
-          amount: String(editTarget.amount),
+          amount: formatNumber(String(editTarget.amount)),
           txnDate: editTarget.txnDate,
           memo: editTarget.memo ?? '',
         }
@@ -138,7 +148,7 @@ export function TransactionForm({
   const onSubmit = (data: TransactionFormValues) => {
     const payload = {
       categoryId: Number(data.categoryId),
-      amount: Number(data.amount),
+      amount: parseNumber(data.amount),
       txnDate: data.txnDate,
       memo: data.memo || undefined,
     }
@@ -244,33 +254,45 @@ export function TransactionForm({
           />
 
           {/* 금액 */}
-          <TextField
-            label="금액"
-            type="number"
-            fullWidth
-            error={!!errors.amount}
-            helperText={errors.amount?.message}
-            InputProps={{
-              endAdornment: <InputAdornment position="end">원</InputAdornment>,
-              inputProps: { min: 1 },
-            }}
-            {...register('amount', {
+          <Controller
+            name="amount"
+            control={control}
+            rules={{
               required: '금액을 입력해주세요.',
-              min: { value: 1, message: '금액은 1원 이상이어야 합니다.' },
-              max: { value: 1_000_000_000, message: '금액은 10억 이하여야 합니다.' },
-            })}
+              validate: (v) => {
+                const n = parseNumber(v)
+                if (n < 1) return '금액은 1원 이상이어야 합니다.'
+                if (n > 1_000_000_000) return '금액은 10억 이하여야 합니다.'
+                return true
+              },
+            }}
+            render={({ field }) => (
+              <TextField
+                label="금액"
+                type="text"
+                inputMode="numeric"
+                fullWidth
+                error={!!errors.amount}
+                helperText={errors.amount?.message}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">원</InputAdornment>,
+                }}
+                value={field.value}
+                onChange={(e) => field.onChange(formatNumber(e.target.value))}
+                onBlur={field.onBlur}
+              />
+            )}
           />
 
-          {/* 메모 */}
+          {/* 내용 */}
           <TextField
-            label="메모 (선택)"
-            multiline
-            rows={2}
+            label="내용"
+            placeholder="거래 내용을 입력해주세요"
             fullWidth
             error={!!errors.memo}
             helperText={errors.memo?.message}
             {...register('memo', {
-              maxLength: { value: 100, message: '메모는 100자 이하여야 합니다.' },
+              maxLength: { value: 100, message: '내용은 100자 이하여야 합니다.' },
             })}
           />
 
