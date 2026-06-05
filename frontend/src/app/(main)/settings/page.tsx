@@ -16,6 +16,8 @@ import { useRouter } from 'next/navigation'
 import { ProfileForm } from '@/features/settings/ProfileForm'
 import { PasswordForm } from '@/features/settings/PasswordForm'
 import { ThemeSelector } from '@/features/settings/ThemeSelector'
+import { AssetManager } from '@/features/settings/AssetManager'
+import { SubscriptionManager } from '@/features/settings/SubscriptionManager'
 import { useAuthStore } from '@/stores/authStore'
 import { authService } from '@/services/auth.service'
 import { useToastStore } from '@/stores/toastStore'
@@ -82,6 +84,16 @@ export default function SettingsPage() {
         {/* 테마 색상 */}
         <SettingsSection title="테마 색상" description="앱 전체에 적용되는 색상 테마를 선택하세요.">
           <ThemeSelector />
+        </SettingsSection>
+
+        {/* 자산 관리 */}
+        <SettingsSection title="자산 관리" description="예금·신용카드·현금 등 자산을 등록하고 관리하세요.">
+          <AssetManager />
+        </SettingsSection>
+
+        {/* 구독 서비스 관리 */}
+        <SettingsSection title="구독 서비스 관리" description="정기 구독 서비스와 결제 금액을 관리하세요.">
+          <SubscriptionManager />
         </SettingsSection>
 
         {/* 카테고리 관리 진입 */}

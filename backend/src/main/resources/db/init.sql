@@ -1,4 +1,48 @@
 -- ============================================================
+-- assets 테이블 생성 (idempotent)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS assets (
+    id             BIGSERIAL PRIMARY KEY,
+    user_id        BIGINT        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name           VARCHAR(50)   NOT NULL,
+    initial_amount BIGINT        NOT NULL DEFAULT 0,
+    asset_type     VARCHAR(20)   NOT NULL DEFAULT 'ETC',
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    deleted_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_assets_user_id ON assets (user_id) WHERE deleted_at IS NULL;
+
+-- ============================================================
+-- subscriptions 테이블 생성 (idempotent)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id             BIGSERIAL PRIMARY KEY,
+    user_id        BIGINT        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name           VARCHAR(50)   NOT NULL,
+    start_date     DATE          NOT NULL,
+    billing_cycle  VARCHAR(10)   NOT NULL DEFAULT 'MONTHLY',
+    amount         BIGINT        NOT NULL DEFAULT 0,
+    created_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    deleted_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions (user_id) WHERE deleted_at IS NULL;
+
+-- ============================================================
+-- budgets/transactions/categories missing columns (idempotent)
+-- ============================================================
+ALTER TABLE budgets      ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE budgets      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE budgets      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE categories   ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE categories   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE categories   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- ============================================================
 -- benefits 테이블 컬럼 추가 (idempotent — 여러 번 실행 안전)
 -- ============================================================
 ALTER TABLE benefits ADD COLUMN IF NOT EXISTS external_id    VARCHAR(100);

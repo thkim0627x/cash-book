@@ -27,6 +27,8 @@ public enum ErrorCode {
     TRANSACTION_NOT_FOUND(HttpStatus.NOT_FOUND, "거래내역을 찾을 수 없습니다."),
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "카테고리를 찾을 수 없습니다."),
     BUDGET_NOT_FOUND(HttpStatus.NOT_FOUND, "예산을 찾을 수 없습니다."),
+    ASSET_NOT_FOUND(HttpStatus.NOT_FOUND, "자산을 찾을 수 없습니다."),
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "구독 정보를 찾을 수 없습니다."),
     BENEFIT_NOT_FOUND(HttpStatus.NOT_FOUND, "혜택 정보를 찾을 수 없습니다."),
     USER_CONDITION_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자 조건 정보가 없습니다. 조건을 먼저 등록해 주세요."),
 

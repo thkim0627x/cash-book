@@ -32,8 +32,9 @@ import {
   Divider,
   Fab,
   Chip,
+  Button,
 } from '@mui/material'
-import { PencilSimple, Trash, Plus } from '@phosphor-icons/react'
+import { PencilSimple, Trash, Plus, DownloadSimple } from '@phosphor-icons/react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionService } from '@/services/transaction.service'
 import { categoryService } from '@/services/category.service'
@@ -48,6 +49,7 @@ import { useToastStore } from '@/stores/toastStore'
 import type { Transaction } from '@/types/transaction'
 import type { TransactionType } from '@/types/category'
 import { PageHeader } from '@/components/common/PageHeader'
+import * as XLSX from 'xlsx'
 
 // 날짜 포매터
 function fmtDate(dateStr: string) {
@@ -133,6 +135,22 @@ export default function TransactionsPage() {
   const handleCategoryFilter = (val: string) => {
     setCategoryFilter(val)
     setPage(0)
+  }
+
+  // 엑셀 다운로드
+  const handleExcelDownload = () => {
+    const rows = filtered.map((txn) => ({
+      날짜: txn.txnDate,
+      유형: txn.type === 'INCOME' ? '수입' : '지출',
+      카테고리: txn.categoryName ?? '',
+      내용: txn.memo ?? '',
+      금액: txn.type === 'INCOME' ? txn.amount : -txn.amount,
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    ws['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 14 }, { wch: 30 }, { wch: 14 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '거래내역')
+    XLSX.writeFile(wb, `거래내역_${year}년${month}월.xlsx`)
   }
 
   // 수정 버튼 클릭
@@ -233,12 +251,20 @@ export default function TransactionsPage() {
               </Select>
             </FormControl>
 
-            <Chip
-              label={`${filtered.length}건`}
-              size="small"
-              variant="outlined"
-              sx={{ ml: 'auto' }}
-            />
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
+              <Chip label={`${filtered.length}건`} size="small" variant="outlined" />
+              <Tooltip title="엑셀 다운로드">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<DownloadSimple size={16} />}
+                  onClick={handleExcelDownload}
+                  disabled={filtered.length === 0}
+                >
+                  엑셀
+                </Button>
+              </Tooltip>
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
@@ -364,7 +390,7 @@ export default function TransactionsPage() {
                     <TableCell width={110} sx={{ fontWeight: 600 }}>날짜</TableCell>
                     <TableCell width={80} sx={{ fontWeight: 600 }}>유형</TableCell>
                     <TableCell width={130} sx={{ fontWeight: 600 }}>카테고리</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>메모</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>내용</TableCell>
                     <TableCell width={150} align="right" sx={{ fontWeight: 600 }}>금액</TableCell>
                     <TableCell width={90} align="center" sx={{ fontWeight: 600 }}>관리</TableCell>
                   </TableRow>
