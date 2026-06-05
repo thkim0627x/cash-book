@@ -28,6 +28,15 @@ interface BudgetFormValues {
   limitAmount: string
 }
 
+function formatNum(v: string): string {
+  const d = v.replace(/[^0-9]/g, '')
+  return d ? Number(d).toLocaleString('ko-KR') : ''
+}
+
+function parseNum(v: string): number {
+  return Number(v.replace(/[^0-9]/g, ''))
+}
+
 interface BudgetFormProps {
   open: boolean
   onClose: () => void
@@ -66,7 +75,7 @@ export function BudgetForm({
     if (editTarget) {
       reset({
         categoryId: String(editTarget.categoryId),
-        limitAmount: String(editTarget.limitAmount),
+        limitAmount: formatNum(String(editTarget.limitAmount)),
       })
     } else {
       reset({ categoryId: '', limitAmount: '' })
@@ -112,12 +121,13 @@ export function BudgetForm({
   }
 
   const onSubmit = (data: BudgetFormValues) => {
+    const amount = parseNum(data.limitAmount)
     if (isEditMode && editTarget) {
-      update({ id: editTarget.id, data: { limitAmount: Number(data.limitAmount) } })
+      update({ id: editTarget.id, data: { limitAmount: amount } })
     } else {
       create({
         categoryId: Number(data.categoryId),
-        limitAmount: Number(data.limitAmount),
+        limitAmount: amount,
         year,
         month,
       })
@@ -163,22 +173,35 @@ export function BudgetForm({
           />
 
           {/* 예산 금액 */}
-          <TextField
-            label="예산 금액"
-            type="number"
-            fullWidth
-            autoFocus={isEditMode}
-            error={!!errors.limitAmount}
-            helperText={errors.limitAmount?.message}
-            InputProps={{
-              endAdornment: <InputAdornment position="end">원</InputAdornment>,
-              inputProps: { min: 1 },
-            }}
-            {...register('limitAmount', {
+          <Controller
+            name="limitAmount"
+            control={control}
+            rules={{
               required: '예산 금액을 입력해주세요.',
-              min: { value: 1000, message: '예산은 1,000원 이상이어야 합니다.' },
-              max: { value: 100_000_000, message: '예산은 1억 이하여야 합니다.' },
-            })}
+              validate: (v) => {
+                const n = parseNum(v)
+                if (n < 1000) return '예산은 1,000원 이상이어야 합니다.'
+                if (n > 100_000_000) return '예산은 1억 이하여야 합니다.'
+                return true
+              },
+            }}
+            render={({ field }) => (
+              <TextField
+                label="예산 금액"
+                type="text"
+                inputMode="numeric"
+                fullWidth
+                autoFocus={isEditMode}
+                error={!!errors.limitAmount}
+                helperText={errors.limitAmount?.message}
+                InputProps={{
+                  endAdornment: <InputAdornment position="end">원</InputAdornment>,
+                }}
+                value={field.value}
+                onChange={(e) => field.onChange(formatNum(e.target.value))}
+                onBlur={field.onBlur}
+              />
+            )}
           />
         </Stack>
       </DialogContent>

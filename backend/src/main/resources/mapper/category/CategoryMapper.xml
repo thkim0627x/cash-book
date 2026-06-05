@@ -30,17 +30,19 @@
         <result property="deletedAt" column="deleted_at"/>
     </resultMap>
 
-    <!-- ─────── 기본 + 내 카테고리 목록 ─────── -->
+    <!-- ─────── 기본 + 내 카테고리 목록 (동일 name+type 중복 제거: 사용자 카테고리 우선) ─────── -->
     <select id="findByUserIdOrDefault" resultMap="CategoryResponseMap">
-        SELECT id, name, type, icon, color, is_default, sort_order
+        SELECT DISTINCT ON (lower(name), type)
+               id, name, type, icon, color, is_default, sort_order
         FROM   categories
         WHERE  deleted_at IS NULL
           AND  (
               user_id IS NULL
               OR user_id = #{userId}
           )
-        ORDER BY is_default DESC,
+        ORDER BY lower(name),
                  type,
+                 (user_id IS NOT NULL) DESC,
                  sort_order ASC,
                  id ASC
     </select>
