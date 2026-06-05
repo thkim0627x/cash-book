@@ -21,7 +21,7 @@ export function TrendMiniWidget() {
   }))
 
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: '100%', borderRadius: 3 }}>
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Typography variant="h6">월별 추이</Typography>

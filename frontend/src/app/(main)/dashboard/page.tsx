@@ -3,33 +3,36 @@ import { useState } from 'react'
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Button,
   Fab,
-  Divider,
   Alert,
-  Paper,
   Grid,
   Stack,
   useMediaQuery,
   useTheme,
+  IconButton,
 } from '@mui/material'
-import { Plus } from '@phosphor-icons/react'
+import { Plus, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionService } from '@/services/transaction.service'
-import { SummaryCards } from '@/features/dashboard/SummaryCards'
+import { SummaryHeroCard } from '@/features/dashboard/SummaryHeroCard'
 import { BudgetWidget } from '@/features/dashboard/BudgetWidget'
 import { TrendMiniWidget } from '@/features/dashboard/TrendMiniWidget'
 import { CategoryWidget } from '@/features/dashboard/CategoryWidget'
 import { BenefitRecommendBanner } from '@/features/dashboard/BenefitRecommendBanner'
-import { TransactionList } from '@/features/transaction/TransactionList'
+import { RecentTransactions } from '@/features/dashboard/RecentTransactions'
 import { TransactionForm } from '@/features/transaction/TransactionForm'
-import { MonthPicker } from '@/components/common/MonthPicker'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { ListSkeleton } from '@/components/common/ListSkeleton'
 import { useToastStore } from '@/stores/toastStore'
 import { useAuthStore } from '@/stores/authStore'
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 6) return '새벽에도 열심히시네요'
+  if (h < 12) return '좋은 아침이에요'
+  if (h < 18) return '좋은 오후예요'
+  return '좋은 저녁이에요'
+}
 
 export default function DashboardPage() {
   const now = new Date()
@@ -41,9 +44,8 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const queryClientInstance = useQueryClient()
   const theme = useTheme()
-  const isXs = useMediaQuery(theme.breakpoints.down('sm'))
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
-  // 거래내역 조회
   const { data: txnRes, isLoading, isError } = useQuery({
     queryKey: ['transactions', year, month],
     queryFn: () => transactionService.getList({ year, month, size: 500 }),
@@ -51,9 +53,7 @@ export default function DashboardPage() {
 
   const transactions = txnRes?.data?.content ?? []
   const summary = transactionService.getSummary(transactions)
-  const recentTransactions = transactions.slice(0, 5)
 
-  // 삭제 mutation
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => transactionService.remove(id),
     onSuccess: () => {
@@ -64,122 +64,103 @@ export default function DashboardPage() {
     onError: () => showToast('삭제에 실패했습니다.', 'error'),
   })
 
-  return (
-    <Box>
-      {/* 인사 배너 */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mb: 3,
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'primary.light',
-          background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.background.paper} 100%)`,
-        }}
-      >
-        <Typography variant="h6">
-          {user?.name ?? '회원'}님, 좋은 하루 보내세요! ☀️
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          오늘도 계획적인 소비로 목표에 한 걸음 다가가세요.
-        </Typography>
-      </Paper>
+  const prevMonth = () => {
+    if (month === 1) { setYear(y => y - 1); setMonth(12) }
+    else setMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    if (month === 12) { setYear(y => y + 1); setMonth(1) }
+    else setMonth(m => m + 1)
+  }
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
-      {/* 월 선택 + 거래 추가 */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: 3,
-          flexWrap: 'wrap',
-          gap: 2,
-        }}
-      >
-        <MonthPicker year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m) }} />
-        {!isXs && (
-          <Button variant="contained" startIcon={<Plus weight="bold" />} onClick={() => setFormOpen(true)}>
+  return (
+    <Box sx={{ pb: isMobile ? 10 : 4 }}>
+
+      {/* ── 상단 헤더 ── */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
+        <Box>
+          <Typography variant="caption" color="text.secondary">
+            {getGreeting()}, <strong>{user?.name ?? '회원'}님</strong>
+          </Typography>
+          {/* 월 네비게이터 */}
+          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.25 }}>
+            <IconButton size="small" onClick={prevMonth} sx={{ p: 0.5 }}>
+              <CaretLeft size={16} />
+            </IconButton>
+            <Typography variant="h6" fontWeight={700} sx={{ minWidth: 72, textAlign: 'center' }}>
+              {year}년 {month}월
+            </Typography>
+            <IconButton size="small" onClick={nextMonth} disabled={isCurrentMonth} sx={{ p: 0.5 }}>
+              <CaretRight size={16} color={isCurrentMonth ? theme.palette.action.disabled : undefined} />
+            </IconButton>
+          </Stack>
+        </Box>
+
+        {!isMobile && (
+          <Button
+            variant="contained"
+            startIcon={<Plus weight="bold" size={16} />}
+            onClick={() => setFormOpen(true)}
+            size="medium"
+          >
             거래 추가
           </Button>
         )}
-      </Box>
+      </Stack>
 
       {isError && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          데이터를 불러오는 중 오류가 발생했습니다.
-        </Alert>
+        <Alert severity="error" sx={{ mb: 2 }}>데이터를 불러오는 중 오류가 발생했습니다.</Alert>
       )}
 
-      {/* 요약 카드 */}
-      <Box sx={{ mb: 3 }}>
-        {isLoading ? <ListSkeleton rows={1} /> : <SummaryCards summary={summary} />}
+      {/* ── 잔액 히어로 카드 ── */}
+      <Box sx={{ mb: 2.5 }}>
+        <SummaryHeroCard summary={summary} loading={isLoading} month={month} />
       </Box>
 
-      {/* 위젯 그리드 */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* ── 메인 그리드 ── */}
+      <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+
+        {/* 최근 거래내역 — 모바일에서 먼저 */}
+        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 1, md: 2 }}>
+          <RecentTransactions
+            transactions={transactions.slice(0, 6)}
+            loading={isLoading}
+            onAdd={() => setFormOpen(true)}
+            onDelete={(id) => setDeleteTarget(id)}
+          />
+        </Grid>
+
         {/* 예산 현황 */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 2, md: 1 }}>
           <BudgetWidget year={year} month={month} />
         </Grid>
 
-        {/* 카테고리 분석 도넛 */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        {/* 카테고리별 지출 */}
+        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 3, md: 3 }}>
           <CategoryWidget year={year} month={month} />
         </Grid>
 
-        {/* 월별 추이 미니차트 */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        {/* 월별 추이 */}
+        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 4, md: 4 }}>
           <TrendMiniWidget />
-        </Grid>
-
-        {/* 최근 거래내역 */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Typography variant="h6">최근 거래내역</Typography>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => (window.location.href = '/transactions')}
-                  sx={{ minWidth: 0 }}
-                >
-                  모두 보기 →
-                </Button>
-              </Stack>
-              <Divider sx={{ mb: 2 }} />
-              {isLoading ? (
-                <ListSkeleton rows={5} />
-              ) : (
-                <TransactionList
-                  transactions={recentTransactions}
-                  onDelete={(id) => setDeleteTarget(id)}
-                  compact={isXs}
-                />
-              )}
-            </CardContent>
-          </Card>
         </Grid>
       </Grid>
 
-      {/* 청년 혜택 추천 배너 */}
-      <Box sx={{ mb: 3 }}>
-        <BenefitRecommendBanner />
-      </Box>
+      {/* ── 청년 혜택 ── */}
+      <BenefitRecommendBanner />
 
-      {/* xs: FAB */}
-      {isXs && (
+      {/* 모바일 FAB */}
+      {isMobile && (
         <Fab
           color="primary"
           onClick={() => setFormOpen(true)}
-          sx={{ position: 'fixed', bottom: 80, right: 20 }}
+          sx={{ position: 'fixed', bottom: 76, right: 20, zIndex: 10 }}
         >
           <Plus weight="bold" size={24} />
         </Fab>
       )}
 
-      {/* 거래 등록 모달 — key로 open 시 폼 초기화 */}
       <TransactionForm
         key={`new-${formOpen}`}
         open={formOpen}
@@ -188,11 +169,10 @@ export default function DashboardPage() {
         defaultMonth={month}
       />
 
-      {/* 삭제 확인 */}
       <ConfirmDialog
         open={deleteTarget !== null}
         title="거래내역 삭제"
-        description="이 거래내역을 삭제하시겠습니까? 삭제된 데이터는 복구할 수 없습니다."
+        description="이 거래내역을 삭제하시겠습니까?"
         loading={isDeleting}
         onConfirm={() => deleteTarget !== null && deleteTxn(deleteTarget)}
         onClose={() => setDeleteTarget(null)}

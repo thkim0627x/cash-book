@@ -41,7 +41,7 @@ export function CategoryWidget({ year, month }: CategoryWidgetProps) {
   const totalExpense = catRes?.data?.totalExpense ?? 0
 
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: '100%', borderRadius: 3 }}>
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         <Stack
           direction="row"

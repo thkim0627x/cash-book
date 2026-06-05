@@ -88,6 +88,7 @@ export function BenefitRecommendBanner() {
   return (
     <Card
       sx={{
+        borderRadius: 3,
         background: (theme) =>
           `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.background.paper} 100%)`,
         border: '1px solid',
