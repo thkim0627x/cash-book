@@ -9,6 +9,7 @@ import {
   DotsThreeOutline,
   ChatTeardropDots,
   Bell,
+  Bank,
   type Icon,
 } from '@phosphor-icons/react'
 
@@ -35,7 +36,7 @@ export const SIDEBAR_NAV: NavItem[] = [
 export const BOTTOM_NAV: NavItem[] = [
   { label: '홈', icon: House, path: '/dashboard' },
   { label: '거래', icon: Receipt, path: '/transactions' },
-  { label: '달력', icon: CalendarBlank, path: '/calendar' },
+  { label: '자산', icon: Bank, path: '/assets' },
   { label: '혜택', icon: Gift, path: '/benefits' },
   { label: '더보기', icon: DotsThreeOutline, path: '/settings' },
 ]

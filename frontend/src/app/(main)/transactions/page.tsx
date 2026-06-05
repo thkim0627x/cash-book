@@ -33,8 +33,10 @@ import {
   Fab,
   Chip,
   Button,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material'
-import { PencilSimple, Trash, Plus, DownloadSimple } from '@phosphor-icons/react'
+import { PencilSimple, Trash, Plus, DownloadSimple, Rows, CalendarBlank } from '@phosphor-icons/react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionService } from '@/services/transaction.service'
 import { categoryService } from '@/services/category.service'
@@ -45,13 +47,14 @@ import { MonthPicker } from '@/components/common/MonthPicker'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ListSkeleton } from '@/components/common/ListSkeleton'
 import { EmptyState } from '@/components/common/EmptyState'
+import { CalendarGrid } from '@/features/calendar/CalendarGrid'
+import { DayDetailDrawer } from '@/features/calendar/DayDetailDrawer'
 import { useToastStore } from '@/stores/toastStore'
 import type { Transaction } from '@/types/transaction'
 import type { TransactionType } from '@/types/category'
 import { PageHeader } from '@/components/common/PageHeader'
 import * as XLSX from 'xlsx'
 
-// 날짜 포매터
 function fmtDate(dateStr: string) {
   const d = new Date(dateStr)
   const days = ['일', '월', '화', '수', '목', '금', '토']
@@ -68,17 +71,21 @@ export default function TransactionsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(20)
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
 
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Transaction | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+
+  // 달력 뷰용 날짜 선택 상태
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const showToast = useToastStore((s) => s.show)
   const queryClientInstance = useQueryClient()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
-  // ── 데이터 패칭 ──────────────────────────────────────────────────
   const { data: txnRes, isLoading, isError } = useQuery({
     queryKey: ['transactions', year, month],
     queryFn: () => transactionService.getList({ year, month, size: 500 }),
@@ -93,7 +100,6 @@ export default function TransactionsPage() {
   const allTransactions = txnRes?.data?.content ?? []
   const categories = catRes?.data ?? []
 
-  // ── 클라이언트 필터링 ────────────────────────────────────────────
   const filtered = useMemo(() => {
     let list = allTransactions
     if (typeFilter !== 'ALL') list = list.filter((t) => t.type === typeFilter)
@@ -101,13 +107,9 @@ export default function TransactionsPage() {
     return list
   }, [allTransactions, typeFilter, categoryFilter])
 
-  // 페이지네이션
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-
-  // 집계
   const summary = transactionService.getSummary(filtered)
 
-  // ── 삭제 ─────────────────────────────────────────────────────────
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => transactionService.remove(id),
     onSuccess: () => {
@@ -118,14 +120,14 @@ export default function TransactionsPage() {
     onError: () => showToast('삭제에 실패했습니다.', 'error'),
   })
 
-  // ── 월 변경 시 페이지 초기화 ─────────────────────────────────────
   const handleMonthChange = (y: number, m: number) => {
     setYear(y)
     setMonth(m)
     setPage(0)
+    setSelectedDate(null)
+    setDrawerOpen(false)
   }
 
-  // ── 필터 변경 시 페이지 초기화 ───────────────────────────────────
   const handleTypeFilter = (_: React.SyntheticEvent, val: 'ALL' | TransactionType) => {
     setTypeFilter(val)
     setCategoryFilter('ALL')
@@ -137,7 +139,11 @@ export default function TransactionsPage() {
     setPage(0)
   }
 
-  // 엑셀 다운로드
+  const handleSelectDate = (dateKey: string) => {
+    setSelectedDate(dateKey)
+    setDrawerOpen(true)
+  }
+
   const handleExcelDownload = () => {
     const rows = filtered.map((txn) => ({
       날짜: txn.txnDate,
@@ -153,25 +159,21 @@ export default function TransactionsPage() {
     XLSX.writeFile(wb, `거래내역_${year}년${month}월.xlsx`)
   }
 
-  // 수정 버튼 클릭
   const handleEditClick = (txn: Transaction) => {
     setEditTarget(txn)
     setFormOpen(true)
   }
 
-  // 모달 닫기
   const handleFormClose = () => {
     setFormOpen(false)
     setEditTarget(null)
   }
 
-  // 해당 타입의 카테고리만 필터 옵션에 표시
   const categoryOptions = useMemo(() => {
     if (typeFilter === 'ALL') return categories
     return categories.filter((c) => c.type === typeFilter)
   }, [categories, typeFilter])
 
-  // ── 렌더 ─────────────────────────────────────────────────────────
   return (
     <Box>
       <PageHeader
@@ -182,7 +184,7 @@ export default function TransactionsPage() {
       {/* ── 필터 영역 ── */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ pb: '12px !important' }}>
-          {/* 월 선택 */}
+          {/* 월 선택 + 뷰 토글 */}
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             alignItems={{ sm: 'center' }}
@@ -192,329 +194,357 @@ export default function TransactionsPage() {
           >
             <MonthPicker year={year} month={month} onChange={handleMonthChange} />
 
-            {/* 집계 요약 */}
-            <Stack direction="row" spacing={2}>
-              <Typography variant="body2">
-                수입{' '}
-                <Typography component="span" variant="body2" color="success.main" fontWeight={700}>
-                  +{summary.totalIncome.toLocaleString('ko-KR')}원
+            <Stack direction="row" spacing={2} alignItems="center">
+              {/* 월간 요약 */}
+              <Stack direction="row" spacing={2}>
+                <Typography variant="body2">
+                  수입{' '}
+                  <Typography component="span" variant="body2" color="success.main" fontWeight={700}>
+                    +{summary.totalIncome.toLocaleString('ko-KR')}원
+                  </Typography>
                 </Typography>
-              </Typography>
-              <Typography variant="body2">
-                지출{' '}
-                <Typography component="span" variant="body2" color="error.main" fontWeight={700}>
-                  -{summary.totalExpense.toLocaleString('ko-KR')}원
+                <Typography variant="body2">
+                  지출{' '}
+                  <Typography component="span" variant="body2" color="error.main" fontWeight={700}>
+                    -{summary.totalExpense.toLocaleString('ko-KR')}원
+                  </Typography>
                 </Typography>
-              </Typography>
-              <Typography variant="body2">
-                잔액{' '}
-                <Typography component="span" variant="body2" color="primary.main" fontWeight={700}>
-                  {summary.balance.toLocaleString('ko-KR')}원
-                </Typography>
-              </Typography>
-            </Stack>
-          </Stack>
+              </Stack>
 
-          {/* 유형 탭 + 카테고리 셀렉트 */}
-          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} spacing={2}>
-            <Tabs
-              value={typeFilter}
-              onChange={handleTypeFilter}
-              sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
-            >
-              <Tab label="전체" value="ALL" />
-              <Tab
-                label="수입"
-                value="INCOME"
-                sx={{ color: 'success.main', '&.Mui-selected': { color: 'success.main' } }}
-              />
-              <Tab
-                label="지출"
-                value="EXPENSE"
-                sx={{ color: 'error.main', '&.Mui-selected': { color: 'error.main' } }}
-              />
-            </Tabs>
-
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>카테고리</InputLabel>
-              <Select
-                value={categoryFilter}
-                label="카테고리"
-                onChange={(e) => handleCategoryFilter(e.target.value)}
+              {/* 뷰 모드 토글 */}
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, val) => val && setViewMode(val)}
+                size="small"
               >
-                <MenuItem value="ALL">전체</MenuItem>
-                {categoryOptions.map((cat) => (
-                  <MenuItem key={cat.id} value={String(cat.id)}>
-                    {cat.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
-              <Chip label={`${filtered.length}건`} size="small" variant="outlined" />
-              <Tooltip title="엑셀 다운로드">
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<DownloadSimple size={16} />}
-                  onClick={handleExcelDownload}
-                  disabled={filtered.length === 0}
-                >
-                  엑셀
-                </Button>
-              </Tooltip>
+                <ToggleButton value="list" sx={{ px: 1.5 }}>
+                  <Rows size={16} />
+                </ToggleButton>
+                <ToggleButton value="calendar" sx={{ px: 1.5 }}>
+                  <CalendarBlank size={16} />
+                </ToggleButton>
+              </ToggleButtonGroup>
             </Stack>
           </Stack>
+
+          {/* 유형 탭 + 카테고리 셀렉트 — 목록 뷰에서만 표시 */}
+          {viewMode === 'list' && (
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} spacing={2}>
+              <Tabs
+                value={typeFilter}
+                onChange={handleTypeFilter}
+                sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
+              >
+                <Tab label="전체" value="ALL" />
+                <Tab
+                  label="수입"
+                  value="INCOME"
+                  sx={{ color: 'success.main', '&.Mui-selected': { color: 'success.main' } }}
+                />
+                <Tab
+                  label="지출"
+                  value="EXPENSE"
+                  sx={{ color: 'error.main', '&.Mui-selected': { color: 'error.main' } }}
+                />
+              </Tabs>
+
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>카테고리</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  label="카테고리"
+                  onChange={(e) => handleCategoryFilter(e.target.value)}
+                >
+                  <MenuItem value="ALL">전체</MenuItem>
+                  {categoryOptions.map((cat) => (
+                    <MenuItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
+                <Chip label={`${filtered.length}건`} size="small" variant="outlined" />
+                <Tooltip title="엑셀 다운로드">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<DownloadSimple size={16} />}
+                    onClick={handleExcelDownload}
+                    disabled={filtered.length === 0}
+                  >
+                    엑셀
+                  </Button>
+                </Tooltip>
+              </Stack>
+            </Stack>
+          )}
         </CardContent>
       </Card>
 
-      {/* ── 에러 ── */}
       {isError && (
         <Alert severity="error" sx={{ mb: 2 }}>
           데이터를 불러오는 중 오류가 발생했습니다.
         </Alert>
       )}
 
-      {/* ── 목록 ── */}
-      <Card>
-        {isLoading ? (
-          <CardContent>
-            <ListSkeleton rows={8} />
-          </CardContent>
-        ) : filtered.length === 0 ? (
-          <CardContent>
-            <EmptyState
-              message="조건에 맞는 거래내역이 없습니다."
-              actionLabel="거래 추가"
-              onAction={() => setFormOpen(true)}
-            />
-          </CardContent>
-        ) : isMobile ? (
-          /* ── 모바일: List ── */
-          <>
-            <List disablePadding>
-              {paginated.map((txn, idx) => (
-                <Box key={txn.id}>
-                  {idx > 0 && <Divider component="li" />}
-                  <ListItem
-                    sx={{ px: 2, py: 1.5 }}
-                    secondaryAction={
-                      <Stack direction="row" spacing={0.5}>
-                        <Tooltip title="수정">
-                          <IconButton size="small" onClick={() => handleEditClick(txn)}>
-                            <PencilSimple size={16} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="삭제">
-                          <IconButton
-                            size="small"
-                            sx={{ color: 'error.main' }}
-                            onClick={() => setDeleteTarget(txn.id)}
-                          >
-                            <Trash size={16} />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    }
-                  >
-                    <ListItemAvatar sx={{ minWidth: 44 }}>
-                      <Avatar
-                        sx={{
-                          width: 36,
-                          height: 36,
-                          bgcolor:
-                            txn.categoryColor ??
-                            (txn.type === 'INCOME' ? 'success.light' : 'error.light'),
-                          fontSize: '0.8rem',
-                        }}
-                      >
-                        {txn.categoryName?.slice(0, 1)}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <TransactionTypeChip type={txn.type} />
-                          <Typography variant="body2" fontWeight={500}>
-                            {txn.categoryName}
-                          </Typography>
+      {/* ── 달력 뷰 ── */}
+      {viewMode === 'calendar' ? (
+        <>
+          <Card>
+            <CardContent sx={{ p: isMobile ? 1 : 2, '&:last-child': { pb: isMobile ? 1 : 2 } }}>
+              {isLoading ? (
+                <ListSkeleton rows={6} />
+              ) : (
+                <CalendarGrid
+                  year={year}
+                  month={month}
+                  transactions={allTransactions}
+                  selectedDate={selectedDate}
+                  onSelectDate={handleSelectDate}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <DayDetailDrawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            dateKey={selectedDate}
+            transactions={allTransactions}
+          />
+        </>
+      ) : (
+        /* ── 목록 뷰 ── */
+        <Card>
+          {isLoading ? (
+            <CardContent>
+              <ListSkeleton rows={8} />
+            </CardContent>
+          ) : filtered.length === 0 ? (
+            <CardContent>
+              <EmptyState
+                message="조건에 맞는 거래내역이 없습니다."
+                actionLabel="거래 추가"
+                onAction={() => setFormOpen(true)}
+              />
+            </CardContent>
+          ) : isMobile ? (
+            /* 모바일: List */
+            <>
+              <List disablePadding>
+                {paginated.map((txn, idx) => (
+                  <Box key={txn.id}>
+                    {idx > 0 && <Divider component="li" />}
+                    <ListItem
+                      sx={{ px: 2, py: 1.5 }}
+                      secondaryAction={
+                        <Stack direction="row" spacing={0.5}>
+                          <Tooltip title="수정">
+                            <IconButton size="small" onClick={() => handleEditClick(txn)}>
+                              <PencilSimple size={16} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="삭제">
+                            <IconButton
+                              size="small"
+                              sx={{ color: 'error.main' }}
+                              onClick={() => setDeleteTarget(txn.id)}
+                            >
+                              <Trash size={16} />
+                            </IconButton>
+                          </Tooltip>
                         </Stack>
                       }
-                      secondary={
-                        <>
-                          <Typography variant="caption" color="text.secondary">
-                            {fmtDate(txn.txnDate)}
-                          </Typography>
-                          {txn.memo && (
-                            <Typography variant="caption" color="text.secondary">
-                              {' · '}
-                              {txn.memo}
-                            </Typography>
-                          )}
-                        </>
-                      }
-                    />
-                    <AmountText
-                      amount={txn.amount}
-                      type={txn.type === 'INCOME' ? 'income' : 'expense'}
-                      variant="body2"
-                      sx={{ ml: 1, whiteSpace: 'nowrap', mr: 8 }}
-                    />
-                  </ListItem>
-                </Box>
-              ))}
-            </List>
-            <TablePagination
-              component="div"
-              count={filtered.length}
-              page={page}
-              onPageChange={(_, p) => setPage(p)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(Number(e.target.value))
-                setPage(0)
-              }}
-              rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-              labelRowsPerPage="행 수"
-              labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`}
-            />
-          </>
-        ) : (
-          /* ── 데스크톱: Table ── */
-          <>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
-                    <TableCell width={110} sx={{ fontWeight: 600 }}>날짜</TableCell>
-                    <TableCell width={80} sx={{ fontWeight: 600 }}>유형</TableCell>
-                    <TableCell width={130} sx={{ fontWeight: 600 }}>카테고리</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>내용</TableCell>
-                    <TableCell width={150} align="right" sx={{ fontWeight: 600 }}>금액</TableCell>
-                    <TableCell width={90} align="center" sx={{ fontWeight: 600 }}>관리</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginated.map((txn) => (
-                    <TableRow
-                      key={txn.id}
-                      hover
-                      sx={{
-                        bgcolor:
-                          txn.type === 'INCOME'
-                            ? 'rgba(232,245,233,0.3)'
-                            : 'rgba(255,235,238,0.3)',
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
                     >
-                      {/* 날짜 */}
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {fmtDate(txn.txnDate)}
-                        </Typography>
-                      </TableCell>
-
-                      {/* 유형 */}
-                      <TableCell>
-                        <TransactionTypeChip type={txn.type} />
-                      </TableCell>
-
-                      {/* 카테고리 */}
-                      <TableCell>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Avatar
-                            sx={{
-                              width: 24,
-                              height: 24,
-                              bgcolor: txn.categoryColor ?? '#e0e0e0',
-                              fontSize: '0.7rem',
-                            }}
-                          >
-                            {txn.categoryName?.slice(0, 1)}
-                          </Avatar>
-                          <Typography variant="body2">{txn.categoryName}</Typography>
-                        </Stack>
-                      </TableCell>
-
-                      {/* 메모 */}
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          color={txn.memo ? 'text.primary' : 'text.disabled'}
+                      <ListItemAvatar sx={{ minWidth: 44 }}>
+                        <Avatar
                           sx={{
-                            maxWidth: 300,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            width: 36,
+                            height: 36,
+                            bgcolor:
+                              txn.categoryColor ??
+                              (txn.type === 'INCOME' ? 'success.light' : 'error.light'),
+                            fontSize: '0.8rem',
                           }}
                         >
-                          {txn.memo || '—'}
-                        </Typography>
-                      </TableCell>
-
-                      {/* 금액 */}
-                      <TableCell align="right">
-                        <AmountText
-                          amount={txn.amount}
-                          type={txn.type === 'INCOME' ? 'income' : 'expense'}
-                          variant="body2"
-                        />
-                      </TableCell>
-
-                      {/* 관리 */}
-                      <TableCell align="center">
-                        <Tooltip title="수정">
-                          <IconButton size="small" onClick={() => handleEditClick(txn)}>
-                            <PencilSimple size={16} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="삭제">
-                          <IconButton
-                            size="small"
-                            sx={{ color: 'error.main' }}
-                            onClick={() => setDeleteTarget(txn.id)}
-                          >
-                            <Trash size={16} />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
+                          {txn.categoryName?.slice(0, 1)}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <TransactionTypeChip type={txn.type} />
+                            <Typography variant="body2" fontWeight={500}>
+                              {txn.categoryName}
+                            </Typography>
+                          </Stack>
+                        }
+                        secondary={
+                          <>
+                            <Typography variant="caption" color="text.secondary">
+                              {fmtDate(txn.txnDate)}
+                            </Typography>
+                            {txn.memo && (
+                              <Typography variant="caption" color="text.secondary">
+                                {' · '}
+                                {txn.memo}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                      />
+                      <AmountText
+                        amount={txn.amount}
+                        type={txn.type === 'INCOME' ? 'income' : 'expense'}
+                        variant="body2"
+                        sx={{ ml: 1, whiteSpace: 'nowrap', mr: 8 }}
+                      />
+                    </ListItem>
+                  </Box>
+                ))}
+              </List>
+              <TablePagination
+                component="div"
+                count={filtered.length}
+                page={page}
+                onPageChange={(_, p) => setPage(p)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(Number(e.target.value))
+                  setPage(0)
+                }}
+                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+                labelRowsPerPage="행 수"
+                labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`}
+              />
+            </>
+          ) : (
+            /* 데스크톱: Table */
+            <>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'grey.50' }}>
+                      <TableCell width={110} sx={{ fontWeight: 600 }}>날짜</TableCell>
+                      <TableCell width={80} sx={{ fontWeight: 600 }}>유형</TableCell>
+                      <TableCell width={130} sx={{ fontWeight: 600 }}>카테고리</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>내용</TableCell>
+                      <TableCell width={150} align="right" sx={{ fontWeight: 600 }}>금액</TableCell>
+                      <TableCell width={90} align="center" sx={{ fontWeight: 600 }}>관리</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {paginated.map((txn) => (
+                      <TableRow
+                        key={txn.id}
+                        hover
+                        sx={{
+                          bgcolor:
+                            txn.type === 'INCOME'
+                              ? 'rgba(232,245,233,0.3)'
+                              : 'rgba(255,235,238,0.3)',
+                          '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                      >
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {fmtDate(txn.txnDate)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <TransactionTypeChip type={txn.type} />
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Avatar
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                bgcolor: txn.categoryColor ?? '#e0e0e0',
+                                fontSize: '0.7rem',
+                              }}
+                            >
+                              {txn.categoryName?.slice(0, 1)}
+                            </Avatar>
+                            <Typography variant="body2">{txn.categoryName}</Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            color={txn.memo ? 'text.primary' : 'text.disabled'}
+                            sx={{
+                              maxWidth: 300,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {txn.memo || '—'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <AmountText
+                            amount={txn.amount}
+                            type={txn.type === 'INCOME' ? 'income' : 'expense'}
+                            variant="body2"
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="수정">
+                            <IconButton size="small" onClick={() => handleEditClick(txn)}>
+                              <PencilSimple size={16} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="삭제">
+                            <IconButton
+                              size="small"
+                              sx={{ color: 'error.main' }}
+                              onClick={() => setDeleteTarget(txn.id)}
+                            >
+                              <Trash size={16} />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-            <TablePagination
-              component="div"
-              count={filtered.length}
-              page={page}
-              onPageChange={(_, p) => setPage(p)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(Number(e.target.value))
-                setPage(0)
-              }}
-              rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-              labelRowsPerPage="행 수"
-              labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`}
-            />
-          </>
-        )}
-      </Card>
+              <TablePagination
+                component="div"
+                count={filtered.length}
+                page={page}
+                onPageChange={(_, p) => setPage(p)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(Number(e.target.value))
+                  setPage(0)
+                }}
+                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+                labelRowsPerPage="행 수"
+                labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`}
+              />
+            </>
+          )}
+        </Card>
+      )}
 
       {/* 모바일 FAB */}
       {isMobile && (
         <Fab
           color="primary"
           onClick={() => setFormOpen(true)}
-          sx={{ position: 'fixed', bottom: 24, right: 24 }}
+          sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}
         >
           <Plus weight="bold" size={24} />
         </Fab>
       )}
 
-      {/* 거래 등록/수정 모달 — key로 open/editTarget 변경 시 폼 초기값 반영 */}
       <TransactionForm
         key={`${editTarget?.id ?? 'new'}-${formOpen}`}
         open={formOpen}
@@ -524,7 +554,6 @@ export default function TransactionsPage() {
         editTarget={editTarget}
       />
 
-      {/* 삭제 확인 */}
       <ConfirmDialog
         open={deleteTarget !== null}
         title="거래내역 삭제"
