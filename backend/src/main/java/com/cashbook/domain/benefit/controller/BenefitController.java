@@ -5,6 +5,10 @@ import com.cashbook.domain.benefit.dto.BenefitDetailResponse;
 import com.cashbook.domain.benefit.dto.BenefitPageResponse;
 import com.cashbook.domain.benefit.dto.BenefitResponse;
 import com.cashbook.domain.benefit.service.BenefitService;
+import com.cashbook.domain.usercondition.dto.UserConditionRequest;
+import com.cashbook.domain.usercondition.dto.UserConditionResponse;
+import com.cashbook.domain.usercondition.service.UserConditionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -17,14 +21,8 @@ import java.util.List;
 public class BenefitController {
 
     private final BenefitService benefitService;
+    private final UserConditionService userConditionService;
 
-    /**
-     * GET /api/benefits
-     *   ?category=주거   (선택: 주거|취업|복지|금융|교육|문화|기타)
-     *   &age=26          (선택: 나이 필터)
-     *   &includeExpired=false (기본 false)
-     *   &page=0 &size=20
-     */
     @GetMapping
     public ApiResponse<BenefitPageResponse> getBenefits(
             @RequestParam(required = false)             String  category,
@@ -37,23 +35,27 @@ public class BenefitController {
                 benefitService.getBenefits(category, age, includeExpired, page, size));
     }
 
-    /**
-     * GET /api/benefits/recommended
-     * 현재 유저 조건(birth_year + user_conditions) 기반 추천
-     * NOTE: Spring MVC 에서 리터럴 경로 /recommended 는 /{id} 보다 우선 매핑됨
-     */
     @GetMapping("/recommended")
     public ApiResponse<List<BenefitResponse>> getRecommended() {
         return ApiResponse.ok(benefitService.getRecommended(currentUserId()));
     }
 
-    /**
-     * GET /api/benefits/{id}
-     * 혜택 상세 (description 포함)
-     */
     @GetMapping("/{id}")
     public ApiResponse<BenefitDetailResponse> getDetail(@PathVariable Long id) {
         return ApiResponse.ok(benefitService.getBenefitDetail(id));
+    }
+
+    /** GET /api/benefits/conditions — 프론트엔드 기대 경로 */
+    @GetMapping("/conditions")
+    public ApiResponse<UserConditionResponse> getConditions() {
+        return ApiResponse.ok(userConditionService.getMyCondition(currentUserId()));
+    }
+
+    /** PUT /api/benefits/conditions — 프론트엔드 기대 경로 */
+    @PutMapping("/conditions")
+    public ApiResponse<UserConditionResponse> saveConditions(
+            @RequestBody @Valid UserConditionRequest req) {
+        return ApiResponse.ok(userConditionService.save(currentUserId(), req));
     }
 
     // ──────────────────────────────

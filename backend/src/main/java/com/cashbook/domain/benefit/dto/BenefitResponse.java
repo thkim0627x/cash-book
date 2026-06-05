@@ -1,13 +1,11 @@
 package com.cashbook.domain.benefit.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-/**
- * 혜택 목록 응답 DTO (description 제외 — 상세에서만 제공).
- */
 @Getter
 @NoArgsConstructor
 public class BenefitResponse {
@@ -16,8 +14,16 @@ public class BenefitResponse {
     private String category;
     private Short targetAgeMin;
     private Short targetAgeMax;
+    private String description;
+    private String host;
+    @JsonProperty("benefit")
+    private String benefitSummary;
+    private String targetIncome;
+    private String targetRegion;
     private String applyUrl;
-    private LocalDate deadline;    // NULL = 상시
+    private LocalDate deadline;
     private String source;
-    private Boolean expired;       // 마감 여부 (서비스 계산)
+    private Boolean expired;
+    private Boolean isNew;
+    private Long viewCount;
 }

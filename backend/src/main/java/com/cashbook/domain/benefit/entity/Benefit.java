@@ -14,14 +14,20 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class Benefit {
     private Long id;
+    private String externalId;       // 외부 API 정책 번호 (중복 방지)
     private String title;
-    private String category;       // 주거|취업|복지|금융|교육|문화|기타
-    private Short targetAgeMin;    // NULL = 하한 없음
-    private Short targetAgeMax;    // NULL = 상한 없음
+    private String category;         // 주거|취업|복지|금융
+    private Short targetAgeMin;
+    private Short targetAgeMax;
     private String description;
+    private String host;             // 주관 기관 (예: 금융위원회)
+    private String benefitSummary;   // 혜택 요약 (예: 월 최대 70만원)
+    private String targetIncome;     // 소득 기준 (예: 중위소득 180% 이하)
+    private String targetRegion;     // 지역 제한 (null = 전국)
     private String applyUrl;
-    private LocalDate deadline;    // NULL = 상시
-    private String source;         // 온통청년|복지로|고용24|기타
+    private LocalDate deadline;
+    private String source;           // 온통청년|복지로|고용24|직접입력
+    private Long viewCount;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private OffsetDateTime deletedAt;

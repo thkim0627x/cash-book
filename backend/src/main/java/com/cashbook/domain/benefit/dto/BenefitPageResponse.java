@@ -13,4 +13,9 @@ public class BenefitPageResponse {
     private int page;
     private int size;
     private int totalPages;
+
+    /** 프론트엔드 호환용 alias */
+    public long getTotalElements() {
+        return this.totalCount;
+    }
 }

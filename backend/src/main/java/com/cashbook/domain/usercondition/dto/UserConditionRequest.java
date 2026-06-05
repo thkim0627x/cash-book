@@ -11,12 +11,12 @@ import lombok.Getter;
 @Getter
 public class UserConditionRequest {
 
-    @Pattern(regexp = "^(LOW|MIDDLE|HIGH)$",
-             message = "소득 수준은 LOW / MIDDLE / HIGH 중 하나여야 합니다.")
+    @Pattern(regexp = "^(UNDER_500|500_TO_1000|1000_TO_2000|OVER_2000)$",
+             message = "소득 수준은 UNDER_500 / 500_TO_1000 / 1000_TO_2000 / OVER_2000 중 하나여야 합니다.")
     private String incomeLevel;
 
-    @Pattern(regexp = "^(EMPLOYED|UNEMPLOYED|FREELANCE|STUDENT)$",
-             message = "고용 상태는 EMPLOYED / UNEMPLOYED / FREELANCE / STUDENT 중 하나여야 합니다.")
+    @Pattern(regexp = "^(UNEMPLOYED|EMPLOYED|FREELANCER|SELF_EMPLOYED)$",
+             message = "고용 상태는 UNEMPLOYED / EMPLOYED / FREELANCER / SELF_EMPLOYED 중 하나여야 합니다.")
     private String employmentStatus;
 
     @Size(max = 50, message = "지역은 50자 이하여야 합니다.")
