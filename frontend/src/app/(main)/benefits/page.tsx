@@ -61,7 +61,7 @@ export default function BenefitsPage() {
 
   const benefits = benefitRes?.data?.content ?? []
   const totalPages = benefitRes?.data?.totalPages ?? 1
-  const totalElements = benefitRes?.data?.totalElements ?? benefitRes?.data?.totalCount ?? 0
+  const totalElements = benefitRes?.data?.totalElements ?? 0
 
   const handleTabChange = (_: React.SyntheticEvent, val: TabValue) => {
     setActiveTab(val)
