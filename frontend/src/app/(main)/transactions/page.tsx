@@ -358,7 +358,7 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
   const d = new Date(txn.txnDate)
 
   return (
-    <Box sx={{ p: { xs: 3, sm: 3 }, height: '100%', overflowY: 'auto' }}>
+    <Box sx={{ p: { xs: 3, sm: 3 }, ...(isDrawer ? { flex: 1, minHeight: 0, overflowY: 'auto', pb: 'calc(env(safe-area-inset-bottom) + 24px)' } : { height: '100%', overflowY: 'auto' }) }}>
       {isDrawer && onClose && (
         <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
           <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
@@ -671,12 +671,14 @@ export default function TransactionsPage() {
         PaperProps={{
           sx: {
             borderRadius: '16px 16px 0 0',
-            maxHeight: '75dvh',
+            maxHeight: '85dvh',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
           }
         }}
       >
-        <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mt: 1.5, mb: 1 }} />
+        <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mt: 1.5, mb: 0, flexShrink: 0 }} />
         <DetailPanel
           txn={selectedTxn}
           onEdit={() => selectedTxn && handleEditClick(selectedTxn)}
