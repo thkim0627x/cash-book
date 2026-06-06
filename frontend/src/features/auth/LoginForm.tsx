@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Card,
@@ -13,6 +13,9 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
+  Stack,
 } from '@mui/material'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
 import { useForm } from 'react-hook-form'
@@ -21,6 +24,10 @@ import { authService } from '@/services/auth.service'
 import { useAuthStore } from '@/stores/authStore'
 import type { LoginRequest } from '@/types/auth'
 import NextLink from 'next/link'
+import { SocialLoginButtons } from './SocialLoginButtons'
+
+const SAVED_EMAIL_KEY = 'savedEmail'
+const LAST_LOGIN_KEY = 'lastLoginMethod'
 
 export function LoginForm() {
   const router = useRouter()
@@ -28,12 +35,26 @@ export function LoginForm() {
   const [showPw, setShowPw] = useState(false)
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [rememberEmail, setRememberEmail] = useState(false)
+  const [autoLogin, setAutoLogin] = useState(true)
+  const [lastLoginMethod, setLastLoginMethod] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginRequest>()
+
+  // 저장된 이메일 + 마지막 로그인 방법 불러오기
+  useEffect(() => {
+    const saved = localStorage.getItem(SAVED_EMAIL_KEY)
+    if (saved) {
+      setValue('email', saved)
+      setRememberEmail(true)
+    }
+    setLastLoginMethod(localStorage.getItem(LAST_LOGIN_KEY))
+  }, [setValue])
 
   const onSubmit = async (data: LoginRequest) => {
     setLoading(true)
@@ -41,7 +62,15 @@ export function LoginForm() {
     try {
       const res = await authService.login(data)
       if (res.success) {
-        // 토큰 우선 저장 (임시 user) → 곧바로 me()로 정확한 정보 교체
+        // 아이디 저장 처리
+        if (rememberEmail) {
+          localStorage.setItem(SAVED_EMAIL_KEY, data.email)
+        } else {
+          localStorage.removeItem(SAVED_EMAIL_KEY)
+        }
+        // 최근 로그인 방법 저장
+        localStorage.setItem(LAST_LOGIN_KEY, 'email')
+
         setAuth(
           {
             id: 0,
@@ -51,14 +80,14 @@ export function LoginForm() {
             role: 'USER',
           },
           res.data.accessToken,
-          res.data.refreshToken
+          res.data.refreshToken,
+          autoLogin
         )
-        // 로그인 직후 실제 사용자 정보 로드
         try {
           const meRes = await authService.me()
           if (meRes.success) setUser(meRes.data)
         } catch {
-          // me 실패해도 로그인 자체는 성공 처리 (대시보드 진입)
+          // me 실패해도 로그인 처리
         }
         router.push('/dashboard')
       } else {
@@ -73,6 +102,8 @@ export function LoginForm() {
       setLoading(false)
     }
   }
+
+  const isEmailLastLogin = lastLoginMethod === 'email'
 
   return (
     <Box
@@ -94,7 +125,7 @@ export function LoginForm() {
         }}
       >
         <CardContent sx={{ p: 0 }}>
-          {/* 로고 영역 */}
+          {/* 로고 */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Typography variant="h5" color="primary" fontWeight={700}>
               PlanDay
@@ -132,17 +163,13 @@ export function LoginForm() {
               type={showPw ? 'text' : 'password'}
               fullWidth
               autoComplete="current-password"
-              sx={{ mb: 3 }}
+              sx={{ mb: 1.5 }}
               error={!!errors.password}
               helperText={errors.password?.message}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setShowPw((v) => !v)}
-                      edge="end"
-                    >
+                    <IconButton size="small" onClick={() => setShowPw((v) => !v)} edge="end">
                       {showPw ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </IconButton>
                   </InputAdornment>
@@ -150,12 +177,35 @@ export function LoginForm() {
               }}
               {...register('password', {
                 required: '비밀번호를 입력해주세요.',
-                minLength: {
-                  value: 6,
-                  message: '비밀번호는 6자 이상이어야 합니다.',
-                },
+                minLength: { value: 6, message: '비밀번호는 6자 이상이어야 합니다.' },
               })}
             />
+
+            {/* 아이디 저장 + 자동 로그인 */}
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 2.5 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={rememberEmail}
+                    onChange={(e) => setRememberEmail(e.target.checked)}
+                  />
+                }
+                label={<Typography variant="body2">아이디 저장</Typography>}
+                sx={{ mr: 0 }}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={autoLogin}
+                    onChange={(e) => setAutoLogin(e.target.checked)}
+                  />
+                }
+                label={<Typography variant="body2">자동 로그인</Typography>}
+                sx={{ mr: 0 }}
+              />
+            </Stack>
 
             <Button
               type="submit"
@@ -163,41 +213,64 @@ export function LoginForm() {
               fullWidth
               size="large"
               disabled={loading}
-              sx={{ mb: 2 }}
+              sx={{ mb: 2, position: 'relative' }}
             >
-              {loading ? (
-                <CircularProgress size={22} color="inherit" />
-              ) : (
-                '로그인'
+              {loading ? <CircularProgress size={22} color="inherit" /> : '로그인'}
+              {isEmailLastLogin && (
+                <Box
+                  component="span"
+                  sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: 8,
+                    bgcolor: 'success.main',
+                    color: 'white',
+                    borderRadius: 10,
+                    px: 0.8,
+                    py: 0.1,
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  최근
+                </Box>
               )}
             </Button>
 
+            {/* 간편 로그인 */}
             <Divider sx={{ my: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                또는
+              <Typography variant="caption" color="text.secondary">
+                간편 로그인
               </Typography>
             </Divider>
 
-            <Button
-              variant="outlined"
-              fullWidth
-              size="large"
-              component={NextLink}
-              href="/register"
-            >
-              회원가입
-            </Button>
+            <SocialLoginButtons lastLoginMethod={lastLoginMethod} mode="login" />
 
-            <Box sx={{ textAlign: 'center', mt: 2 }}>
+            {/* 하단 링크 */}
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mt: 3 }}
+            >
               <Link
                 href="#"
                 variant="body2"
                 color="text.secondary"
                 underline="hover"
               >
-                비밀번호를 잊으셨나요?
+                비밀번호 찾기
               </Link>
-            </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                component={NextLink}
+                href="/register"
+              >
+                회원가입
+              </Button>
+            </Stack>
           </Box>
         </CardContent>
       </Card>
