@@ -163,7 +163,14 @@ export function TransactionForm({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={fullScreen}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={fullScreen}
+      PaperProps={fullScreen ? { sx: { borderRadius: 0 } } : undefined}
+    >
       <DialogTitle>{isEditMode ? '거래 수정' : '거래 추가'}</DialogTitle>
 
       <DialogContent dividers>

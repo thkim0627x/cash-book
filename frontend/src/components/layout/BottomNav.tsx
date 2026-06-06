@@ -30,6 +30,7 @@ export function BottomNav() {
       <BottomNavigation
         value={activeValue}
         onChange={(_, val) => router.push(val)}
+        showLabels
         sx={{
           height: BOTTOM_NAV_HEIGHT,
           bgcolor: 'background.paper',

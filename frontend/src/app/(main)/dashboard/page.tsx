@@ -13,12 +13,9 @@ import {
   Skeleton,
   useMediaQuery,
   useTheme,
-  IconButton,
 } from '@mui/material'
 import {
   Plus,
-  CaretLeft,
-  CaretRight,
   TrendUp,
   TrendDown,
   PiggyBank,
@@ -27,17 +24,18 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { transactionService } from '@/services/transaction.service'
+import { assetService } from '@/services/asset.service'
 import { BudgetWidget } from '@/features/dashboard/BudgetWidget'
 import { TrendMiniWidget } from '@/features/dashboard/TrendMiniWidget'
 import { CategoryWidget } from '@/features/dashboard/CategoryWidget'
 import { BenefitRecommendBanner } from '@/features/dashboard/BenefitRecommendBanner'
 import { RecentTransactions } from '@/features/dashboard/RecentTransactions'
-import { AssetSummaryWidget } from '@/features/dashboard/AssetSummaryWidget'
 import { TransactionForm } from '@/features/transaction/TransactionForm'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useToastStore } from '@/stores/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { TransactionType } from '@/types/category'
+import type { AssetType } from '@/types/asset'
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -45,6 +43,10 @@ function getGreeting() {
   if (h < 12) return '좋은 아침이에요'
   if (h < 18) return '좋은 오후예요'
   return '좋은 저녁이에요'
+}
+
+function getAssetClass(type: AssetType): 'ASSET' | 'LIABILITY' {
+  return type === 'CREDIT_CARD' ? 'LIABILITY' : 'ASSET'
 }
 
 interface SummaryCardProps {
@@ -95,10 +97,9 @@ interface QuickActionProps {
   icon: React.ReactNode
   label: string
   onClick: () => void
-  color?: string
 }
 
-function QuickActionButton({ icon, label, onClick, color }: QuickActionProps) {
+function QuickActionButton({ icon, label, onClick }: QuickActionProps) {
   return (
     <Button
       variant="outlined"
@@ -111,10 +112,10 @@ function QuickActionButton({ icon, label, onClick, color }: QuickActionProps) {
         height: 'auto',
         borderRadius: 1,
         borderColor: 'divider',
-        color: color ?? 'text.primary',
+        color: 'text.primary',
         fontSize: { xs: '0.7rem', sm: '0.8rem' },
         fontWeight: 600,
-        '&:hover': { borderColor: 'primary.main', bgcolor: 'primary.50' },
+        '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
       }}
     >
       {icon}
@@ -125,8 +126,8 @@ function QuickActionButton({ icon, label, onClick, color }: QuickActionProps) {
 
 export default function DashboardPage() {
   const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
+  const [year] = useState(now.getFullYear())
+  const [month] = useState(now.getMonth() + 1)
   const [formOpen, setFormOpen] = useState(false)
   const [formDefaultType, setFormDefaultType] = useState<TransactionType>('EXPENSE')
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
@@ -137,13 +138,24 @@ export default function DashboardPage() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
-  const { data: txnRes, isLoading, isError } = useQuery({
+  const { data: txnRes, isLoading: txnLoading, isError } = useQuery({
     queryKey: ['transactions', year, month],
     queryFn: () => transactionService.getList({ year, month, size: 500 }),
   })
 
+  const { data: assetRes, isLoading: assetLoading } = useQuery({
+    queryKey: ['assets'],
+    queryFn: () => assetService.getAll(),
+  })
+
   const transactions = txnRes?.data?.content ?? []
-  const summary = transactionService.getSummary(transactions)
+  const assets = assetRes?.data ?? []
+
+  const assetItems = assets.filter((a) => getAssetClass(a.assetType) === 'ASSET')
+  const liabilityItems = assets.filter((a) => getAssetClass(a.assetType) === 'LIABILITY')
+  const totalAsset = assetItems.reduce((s, a) => s + a.initialAmount, 0)
+  const totalLiability = liabilityItems.reduce((s, a) => s + a.initialAmount, 0)
+  const netWorth = totalAsset - totalLiability
 
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => transactionService.remove(id),
@@ -155,36 +167,19 @@ export default function DashboardPage() {
     onError: () => showToast('삭제에 실패했습니다.', 'error'),
   })
 
-  const prevMonth = () => {
-    if (month === 1) { setYear(y => y - 1); setMonth(12) }
-    else setMonth(m => m - 1)
-  }
-  const nextMonth = () => {
-    if (month === 12) { setYear(y => y + 1); setMonth(1) }
-    else setMonth(m => m + 1)
-  }
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
-
   const openForm = (type: TransactionType) => {
     setFormDefaultType(type)
     setFormOpen(true)
   }
 
-  const balancePrefix = summary.balance < 0 ? '-' : ''
-  const balanceAbs = Math.abs(summary.balance)
-  const balanceColor = summary.balance >= 0 ? 'success.main' : 'error.main'
-
   return (
     <Box sx={{ pb: isMobile ? 10 : 4 }}>
 
-      {/* ── 페이지 헤더 ── */}
-      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.3 }}>홈</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {getGreeting()}, <strong>{user?.name ?? '회원'}님</strong>
-          </Typography>
-        </Box>
+      {/* ── 인삿말 + 거래 추가 버튼 ── */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Typography variant="caption" color="text.secondary">
+          {getGreeting()}, <strong>{user?.name ?? '회원'}님</strong>
+        </Typography>
         {!isMobile && (
           <Button
             variant="contained"
@@ -201,20 +196,7 @@ export default function DashboardPage() {
         <Alert severity="error" sx={{ mb: 2 }}>데이터를 불러오는 중 오류가 발생했습니다.</Alert>
       )}
 
-      {/* ── 월 네비게이터 ── */}
-      <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5} sx={{ mb: 2 }}>
-        <IconButton size="small" onClick={prevMonth} sx={{ p: 0.5 }}>
-          <CaretLeft size={18} />
-        </IconButton>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ minWidth: 100, textAlign: 'center' }}>
-          {year}년 {month}월
-        </Typography>
-        <IconButton size="small" onClick={nextMonth} disabled={isCurrentMonth} sx={{ p: 0.5 }}>
-          <CaretRight size={18} />
-        </IconButton>
-      </Stack>
-
-      {/* ── 3-카드 요약 ── */}
+      {/* ── 3-카드 요약 (자산/부채/자본) ── */}
       <Box
         sx={{
           display: 'grid',
@@ -223,14 +205,14 @@ export default function DashboardPage() {
           mb: 2,
         }}
       >
-        <SummaryCard label="수입" value={summary.totalIncome} color="info.main" loading={isLoading} />
-        <SummaryCard label="지출" value={summary.totalExpense} color="error.main" loading={isLoading} />
+        <SummaryCard label="자산" value={totalAsset} color="info.main" loading={assetLoading} />
+        <SummaryCard label="부채" value={totalLiability} color="error.main" loading={assetLoading} />
         <SummaryCard
-          label="잔액"
-          value={balanceAbs}
-          color={balanceColor}
-          prefix={balancePrefix}
-          loading={isLoading}
+          label="자본"
+          value={Math.abs(netWorth)}
+          color={netWorth >= 0 ? 'success.main' : 'error.main'}
+          prefix={netWorth < 0 ? '-' : ''}
+          loading={assetLoading}
         />
       </Box>
 
@@ -252,7 +234,7 @@ export default function DashboardPage() {
           onClick={() => router.push('/assets')}
         />
         <QuickActionButton
-          icon={<ChartBar size={20} weight="bold" color={theme.palette.secondary?.main ?? theme.palette.primary.main} />}
+          icon={<ChartBar size={20} weight="bold" color={theme.palette.primary.main} />}
           label="통계"
           onClick={() => router.push('/statistics')}
         />
@@ -262,32 +244,27 @@ export default function DashboardPage() {
       <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
 
         {/* 최근 거래내역 */}
-        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 1, md: 1 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <RecentTransactions
             transactions={transactions.slice(0, 6)}
-            loading={isLoading}
+            loading={txnLoading}
             onAdd={() => openForm('EXPENSE')}
             onDelete={(id) => setDeleteTarget(id)}
           />
         </Grid>
 
         {/* 예산 현황 */}
-        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 2, md: 2 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <BudgetWidget year={year} month={month} />
         </Grid>
 
-        {/* 자산 현황 위젯 */}
-        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 3, md: 3 }}>
-          <AssetSummaryWidget />
-        </Grid>
-
         {/* 카테고리별 지출 */}
-        <Grid size={{ xs: 12, md: 6 }} order={{ xs: 4, md: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <CategoryWidget year={year} month={month} />
         </Grid>
 
-        {/* 월별 추이 — 전체 너비 */}
-        <Grid size={{ xs: 12 }} order={{ xs: 5, md: 5 }}>
+        {/* 월별 추이 */}
+        <Grid size={{ xs: 12, md: 6 }}>
           <TrendMiniWidget />
         </Grid>
       </Grid>
