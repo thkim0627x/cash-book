@@ -11,7 +11,6 @@ interface Props {
 
 export function SummaryHeroCard({ summary, loading, month }: Props) {
   const theme = useTheme()
-  const isPositive = summary.balance >= 0
 
   if (loading) {
     return (
@@ -49,7 +48,7 @@ export function SummaryHeroCard({ summary, loading, month }: Props) {
         <Typography
           variant="h3"
           fontWeight={700}
-          sx={{ mt: 0.5, mb: 2.5, letterSpacing: -1, lineHeight: 1.1 }}
+          sx={{ mt: 0.5, mb: 2.5, letterSpacing: -1, lineHeight: 1.1, fontSize: { xs: '2rem', sm: '2.5rem' } }}
         >
           {summary.balance < 0 ? '-' : ''}
           {Math.abs(summary.balance).toLocaleString('ko-KR')}
@@ -81,7 +80,7 @@ export function SummaryHeroCard({ summary, loading, month }: Props) {
               <Typography variant="caption" sx={{ opacity: 0.8 }}>지출</Typography>
             </Stack>
             <Typography variant="h6" fontWeight={700}>
-              -{summary.totalExpense.toLocaleString('ko-KR')}
+              {summary.totalExpense.toLocaleString('ko-KR')}
               <Typography component="span" variant="caption" sx={{ ml: 0.5, opacity: 0.8 }}>원</Typography>
             </Typography>
           </Box>

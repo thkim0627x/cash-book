@@ -1,48 +1,15 @@
 'use client'
 import { useState, useMemo } from 'react'
 import {
-  Box,
-  Card,
-  CardContent,
-  Tabs,
-  Tab,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  IconButton,
-  Tooltip,
-  Typography,
-  Stack,
-  Alert,
-  useMediaQuery,
-  useTheme,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Avatar,
-  Divider,
-  Fab,
-  Chip,
-  Button,
-  ToggleButtonGroup,
-  ToggleButton,
+  Box, Card, CardContent, Tabs, Tab, Select, MenuItem, FormControl, InputLabel,
+  IconButton, Tooltip, Typography, Stack, Alert, useMediaQuery, useTheme,
+  Avatar, Divider, Fab, Chip, Button, ToggleButtonGroup, ToggleButton,
 } from '@mui/material'
 import { PencilSimple, Trash, Plus, DownloadSimple, Rows, CalendarBlank } from '@phosphor-icons/react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionService } from '@/services/transaction.service'
 import { categoryService } from '@/services/category.service'
 import { TransactionForm } from '@/features/transaction/TransactionForm'
-import { TransactionTypeChip } from '@/components/common/TransactionTypeChip'
-import { AmountText } from '@/components/common/AmountText'
 import { MonthPicker } from '@/components/common/MonthPicker'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ListSkeleton } from '@/components/common/ListSkeleton'
@@ -55,10 +22,31 @@ import type { TransactionType } from '@/types/category'
 import { PageHeader } from '@/components/common/PageHeader'
 import * as XLSX from 'xlsx'
 
-function fmtDate(dateStr: string) {
+// ── 공휴일 ────────────────────────────────────────────────────────────────
+const KOREAN_HOLIDAYS: Record<string, string> = {
+  '2025-01-01': '신정', '2025-01-28': '설날연휴', '2025-01-29': '설날', '2025-01-30': '설날연휴',
+  '2025-03-01': '삼일절', '2025-05-05': '어린이날', '2025-05-06': '대체공휴일',
+  '2025-06-06': '현충일', '2025-08-15': '광복절', '2025-10-03': '개천절',
+  '2025-10-05': '추석연휴', '2025-10-06': '추석', '2025-10-07': '추석연휴',
+  '2025-10-09': '한글날', '2025-12-25': '성탄절',
+  '2026-01-01': '신정', '2026-02-17': '설날연휴', '2026-02-18': '설날', '2026-02-19': '설날연휴',
+  '2026-03-01': '삼일절', '2026-03-02': '대체공휴일', '2026-05-05': '어린이날',
+  '2026-06-06': '현충일', '2026-08-15': '광복절',
+  '2026-09-24': '추석연휴', '2026-09-25': '추석', '2026-09-26': '추석연휴',
+  '2026-10-03': '개천절', '2026-10-09': '한글날', '2026-12-25': '성탄절',
+}
+
+const DAY_NAMES = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+
+function getDateInfo(dateStr: string) {
   const d = new Date(dateStr)
-  const days = ['일', '월', '화', '수', '목', '금', '토']
-  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${days[d.getDay()]})`
+  const dow = d.getDay()
+  const dd = String(d.getDate()).padStart(2, '0')
+  const isSaturday = dow === 6
+  const isSunday = dow === 0
+  const holiday = KOREAN_HOLIDAYS[dateStr]
+  const isRedDay = isSunday || !!holiday
+  return { dd, dayName: DAY_NAMES[dow], isSaturday, isSunday, holiday, isRedDay }
 }
 
 const ROWS_PER_PAGE_OPTIONS = [10, 20, 50]
@@ -69,15 +57,12 @@ export default function TransactionsPage() {
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [typeFilter, setTypeFilter] = useState<'ALL' | TransactionType>('ALL')
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(20)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
 
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Transaction | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
 
-  // 달력 뷰용 날짜 선택 상태
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -90,7 +75,6 @@ export default function TransactionsPage() {
     queryKey: ['transactions', year, month],
     queryFn: () => transactionService.getList({ year, month, size: 500 }),
   })
-
   const { data: catRes } = useQuery({
     queryKey: ['categories'],
     queryFn: categoryService.getAll,
@@ -107,7 +91,16 @@ export default function TransactionsPage() {
     return list
   }, [allTransactions, typeFilter, categoryFilter])
 
-  const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+  // 날짜별 그룹 (최신순 → 내림차순)
+  const groupedByDate = useMemo(() => {
+    const map: Record<string, Transaction[]> = {}
+    for (const t of filtered) {
+      if (!map[t.txnDate]) map[t.txnDate] = []
+      map[t.txnDate].push(t)
+    }
+    return Object.entries(map).sort(([a], [b]) => b.localeCompare(a))
+  }, [filtered])
+
   const summary = transactionService.getSummary(filtered)
 
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
@@ -121,27 +114,12 @@ export default function TransactionsPage() {
   })
 
   const handleMonthChange = (y: number, m: number) => {
-    setYear(y)
-    setMonth(m)
-    setPage(0)
-    setSelectedDate(null)
-    setDrawerOpen(false)
+    setYear(y); setMonth(m)
+    setSelectedDate(null); setDrawerOpen(false)
   }
 
   const handleTypeFilter = (_: React.SyntheticEvent, val: 'ALL' | TransactionType) => {
-    setTypeFilter(val)
-    setCategoryFilter('ALL')
-    setPage(0)
-  }
-
-  const handleCategoryFilter = (val: string) => {
-    setCategoryFilter(val)
-    setPage(0)
-  }
-
-  const handleSelectDate = (dateKey: string) => {
-    setSelectedDate(dateKey)
-    setDrawerOpen(true)
+    setTypeFilter(val); setCategoryFilter('ALL')
   }
 
   const handleExcelDownload = () => {
@@ -159,388 +137,251 @@ export default function TransactionsPage() {
     XLSX.writeFile(wb, `거래내역_${year}년${month}월.xlsx`)
   }
 
-  const handleEditClick = (txn: Transaction) => {
-    setEditTarget(txn)
-    setFormOpen(true)
-  }
+  const handleEditClick = (txn: Transaction) => { setEditTarget(txn); setFormOpen(true) }
+  const handleFormClose = () => { setFormOpen(false); setEditTarget(null) }
 
-  const handleFormClose = () => {
-    setFormOpen(false)
-    setEditTarget(null)
-  }
-
-  const categoryOptions = useMemo(() => {
-    if (typeFilter === 'ALL') return categories
-    return categories.filter((c) => c.type === typeFilter)
-  }, [categories, typeFilter])
+  const categoryOptions = useMemo(
+    () => typeFilter === 'ALL' ? categories : categories.filter((c) => c.type === typeFilter),
+    [categories, typeFilter]
+  )
 
   return (
-    <Box>
-      <PageHeader
-        title="거래 내역"
-        action={!isMobile ? { label: '거래 추가', onClick: () => setFormOpen(true) } : undefined}
-      />
+    <Box sx={{ pb: isMobile ? 10 : 4 }}>
+      <PageHeader title="거래 내역" action={!isMobile ? { label: '거래 추가', onClick: () => setFormOpen(true) } : undefined} />
 
-      {/* ── 필터 영역 ── */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ pb: '12px !important' }}>
-          {/* 월 선택 + 뷰 토글 */}
+      {/* ── 필터 카드 ── */}
+      <Card sx={{ mb: 2, borderRadius: 3 }}>
+        <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+
+          {/* Row 1: 월 선택 + 집계 요약 */}
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             alignItems={{ sm: 'center' }}
             justifyContent="space-between"
-            spacing={2}
-            sx={{ mb: 2 }}
+            spacing={1}
+            sx={{ mb: 1.5 }}
           >
             <MonthPicker year={year} month={month} onChange={handleMonthChange} />
 
-            <Stack direction="row" spacing={2} alignItems="center">
-              {/* 월간 요약 */}
-              <Stack direction="row" spacing={2}>
-                <Typography variant="body2">
-                  수입{' '}
-                  <Typography component="span" variant="body2" color="success.main" fontWeight={700}>
-                    +{summary.totalIncome.toLocaleString('ko-KR')}원
-                  </Typography>
+            <Stack direction="row" spacing={{ xs: 2, sm: 3 }} alignItems="center" flexWrap="wrap">
+              <Box sx={{ textAlign: { xs: 'left', sm: 'center' } }}>
+                <Typography variant="caption" color="text.secondary" display="block">수입</Typography>
+                <Typography variant="subtitle2" color="info.main" fontWeight={700}>
+                  +{summary.totalIncome.toLocaleString('ko-KR')}원
                 </Typography>
-                <Typography variant="body2">
-                  지출{' '}
-                  <Typography component="span" variant="body2" color="error.main" fontWeight={700}>
-                    -{summary.totalExpense.toLocaleString('ko-KR')}원
-                  </Typography>
+              </Box>
+              <Box sx={{ textAlign: { xs: 'left', sm: 'center' } }}>
+                <Typography variant="caption" color="text.secondary" display="block">지출</Typography>
+                <Typography variant="subtitle2" color="error.main" fontWeight={700}>
+                  {summary.totalExpense.toLocaleString('ko-KR')}원
                 </Typography>
-              </Stack>
-
-              {/* 뷰 모드 토글 */}
-              <ToggleButtonGroup
-                value={viewMode}
-                exclusive
-                onChange={(_, val) => val && setViewMode(val)}
-                size="small"
-              >
-                <ToggleButton value="list" sx={{ px: 1.5 }}>
-                  <Rows size={16} />
-                </ToggleButton>
-                <ToggleButton value="calendar" sx={{ px: 1.5 }}>
-                  <CalendarBlank size={16} />
-                </ToggleButton>
-              </ToggleButtonGroup>
+              </Box>
+              <Box sx={{ textAlign: { xs: 'left', sm: 'center' } }}>
+                <Typography variant="caption" color="text.secondary" display="block">잔액</Typography>
+                <Typography variant="subtitle2" fontWeight={700} color={summary.balance >= 0 ? 'success.main' : 'error.main'}>
+                  {summary.balance >= 0 ? '+' : '-'}{Math.abs(summary.balance).toLocaleString('ko-KR')}원
+                </Typography>
+              </Box>
             </Stack>
           </Stack>
 
-          {/* 유형 탭 + 카테고리 셀렉트 — 목록 뷰에서만 표시 */}
-          {viewMode === 'list' && (
-            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} spacing={2}>
-              <Tabs
-                value={typeFilter}
-                onChange={handleTypeFilter}
-                sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5 } }}
-              >
-                <Tab label="전체" value="ALL" />
-                <Tab
-                  label="수입"
-                  value="INCOME"
-                  sx={{ color: 'success.main', '&.Mui-selected': { color: 'success.main' } }}
-                />
-                <Tab
-                  label="지출"
-                  value="EXPENSE"
-                  sx={{ color: 'error.main', '&.Mui-selected': { color: 'error.main' } }}
-                />
-              </Tabs>
+          {/* Row 2: 필터 + 뷰 토글 */}
+          <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+            <Tabs
+              value={typeFilter}
+              onChange={handleTypeFilter}
+              sx={{ minHeight: 32, '& .MuiTab-root': { minHeight: 32, py: 0, px: 1.5, fontSize: '0.8rem' } }}
+            >
+              <Tab label="전체" value="ALL" />
+              <Tab label="수입" value="INCOME" sx={{ color: 'info.main', '&.Mui-selected': { color: 'info.main' } }} />
+              <Tab label="지출" value="EXPENSE" sx={{ color: 'error.main', '&.Mui-selected': { color: 'error.main' } }} />
+            </Tabs>
 
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel>카테고리</InputLabel>
-                <Select
-                  value={categoryFilter}
-                  label="카테고리"
-                  onChange={(e) => handleCategoryFilter(e.target.value)}
-                >
-                  <MenuItem value="ALL">전체</MenuItem>
-                  {categoryOptions.map((cat) => (
-                    <MenuItem key={cat.id} value={String(cat.id)}>
-                      {cat.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            <FormControl size="small" sx={{ minWidth: { xs: 110, sm: 130 } }}>
+              <InputLabel>카테고리</InputLabel>
+              <Select value={categoryFilter} label="카테고리" onChange={(e) => setCategoryFilter(e.target.value)}>
+                <MenuItem value="ALL">전체</MenuItem>
+                {categoryOptions.map((cat) => (
+                  <MenuItem key={cat.id} value={String(cat.id)}>{cat.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
-                <Chip label={`${filtered.length}건`} size="small" variant="outlined" />
-                <Tooltip title="엑셀 다운로드">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<DownloadSimple size={16} />}
-                    onClick={handleExcelDownload}
-                    disabled={filtered.length === 0}
-                  >
-                    엑셀
-                  </Button>
-                </Tooltip>
-              </Stack>
-            </Stack>
-          )}
+            <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip label={`${filtered.length}건`} size="small" variant="outlined" />
+              <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && setViewMode(v)} size="small">
+                <ToggleButton value="list" sx={{ px: 1.2, py: 0.4 }}><Rows size={15} /></ToggleButton>
+                <ToggleButton value="calendar" sx={{ px: 1.2, py: 0.4 }}><CalendarBlank size={15} /></ToggleButton>
+              </ToggleButtonGroup>
+              <Tooltip title="엑셀 다운로드">
+                <span>
+                  <IconButton size="small" onClick={handleExcelDownload} disabled={filtered.length === 0}>
+                    <DownloadSimple size={18} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          </Stack>
         </CardContent>
       </Card>
 
-      {isError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          데이터를 불러오는 중 오류가 발생했습니다.
-        </Alert>
-      )}
+      {isError && <Alert severity="error" sx={{ mb: 2 }}>데이터를 불러오는 중 오류가 발생했습니다.</Alert>}
 
       {/* ── 달력 뷰 ── */}
       {viewMode === 'calendar' ? (
         <>
-          <Card>
-            <CardContent sx={{ p: isMobile ? 1 : 2, '&:last-child': { pb: isMobile ? 1 : 2 } }}>
-              {isLoading ? (
-                <ListSkeleton rows={6} />
-              ) : (
-                <CalendarGrid
-                  year={year}
-                  month={month}
-                  transactions={allTransactions}
-                  selectedDate={selectedDate}
-                  onSelectDate={handleSelectDate}
-                />
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent sx={{ p: { xs: 0.5, sm: 1.5 }, '&:last-child': { pb: { xs: 0.5, sm: 1.5 } } }}>
+              {isLoading ? <ListSkeleton rows={6} /> : (
+                <CalendarGrid year={year} month={month} transactions={allTransactions} selectedDate={selectedDate} onSelectDate={(d) => { setSelectedDate(d); setDrawerOpen(true) }} />
               )}
             </CardContent>
           </Card>
-
-          <DayDetailDrawer
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            dateKey={selectedDate}
-            transactions={allTransactions}
-          />
+          <DayDetailDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} dateKey={selectedDate} transactions={allTransactions} />
         </>
       ) : (
-        /* ── 목록 뷰 ── */
-        <Card>
-          {isLoading ? (
+        /* ── 목록 뷰 — 날짜별 그룹 카드 ── */
+        isLoading ? (
+          <Card sx={{ borderRadius: 3 }}><CardContent><ListSkeleton rows={8} /></CardContent></Card>
+        ) : filtered.length === 0 ? (
+          <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <ListSkeleton rows={8} />
+              <EmptyState message="조건에 맞는 거래내역이 없습니다." actionLabel="거래 추가" onAction={() => setFormOpen(true)} />
             </CardContent>
-          ) : filtered.length === 0 ? (
-            <CardContent>
-              <EmptyState
-                message="조건에 맞는 거래내역이 없습니다."
-                actionLabel="거래 추가"
-                onAction={() => setFormOpen(true)}
-              />
-            </CardContent>
-          ) : isMobile ? (
-            /* 모바일: List */
-            <>
-              <List disablePadding>
-                {paginated.map((txn, idx) => (
-                  <Box key={txn.id}>
-                    {idx > 0 && <Divider component="li" />}
-                    <ListItem
-                      sx={{ px: 2, py: 1.5 }}
-                      secondaryAction={
-                        <Stack direction="row" spacing={0.5}>
-                          <Tooltip title="수정">
-                            <IconButton size="small" onClick={() => handleEditClick(txn)}>
-                              <PencilSimple size={16} />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="삭제">
-                            <IconButton
-                              size="small"
-                              sx={{ color: 'error.main' }}
-                              onClick={() => setDeleteTarget(txn.id)}
-                            >
-                              <Trash size={16} />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      }
-                    >
-                      <ListItemAvatar sx={{ minWidth: 44 }}>
+          </Card>
+        ) : (
+          <Stack spacing={1.5}>
+            {groupedByDate.map(([dateKey, txns]) => {
+              const { dd, dayName, isSaturday, isRedDay, holiday } = getDateInfo(dateKey)
+              const dayIncome = txns.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+              const dayExpense = txns.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+
+              return (
+                <Card key={dateKey} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+                  {/* ── 날짜 헤더 ── */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      px: { xs: 2, sm: 2.5 },
+                      py: { xs: 1, sm: 1.25 },
+                      bgcolor: isRedDay ? 'rgba(198,40,40,0.04)' : isSaturday ? 'rgba(2,119,189,0.05)' : 'grey.50',
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography
+                        variant="h6"
+                        fontWeight={700}
+                        color={isRedDay ? 'error.main' : isSaturday ? 'info.main' : 'text.primary'}
+                        sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' }, lineHeight: 1 }}
+                      >
+                        {dd}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        {dayName}
+                      </Typography>
+                      {isSaturday && (
+                        <Chip label="토" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#e1f5fe', color: '#0277bd' }} />
+                      )}
+                      {isRedDay && (
+                        <Chip label={holiday ?? '일'} size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#ffebee', color: '#c62828' }} />
+                      )}
+                    </Stack>
+
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      {dayIncome > 0 && (
+                        <Typography variant="caption" color="info.main" fontWeight={700}>
+                          +{dayIncome.toLocaleString('ko-KR')}
+                        </Typography>
+                      )}
+                      {dayExpense > 0 && (
+                        <Typography variant="caption" color="error.main" fontWeight={700}>
+                          {dayExpense.toLocaleString('ko-KR')}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+
+                  {/* ── 거래 행 ── */}
+                  {txns.map((txn, idx) => (
+                    <Box key={txn.id}>
+                      {idx > 0 && <Divider />}
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1.5}
+                        sx={{
+                          px: { xs: 2, sm: 2.5 },
+                          py: { xs: 1, sm: 1.1 },
+                          transition: 'background-color 0.15s',
+                          '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                      >
+                        {/* 카테고리 아바타 */}
                         <Avatar
                           sx={{
-                            width: 36,
-                            height: 36,
-                            bgcolor:
-                              txn.categoryColor ??
-                              (txn.type === 'INCOME' ? 'success.light' : 'error.light'),
-                            fontSize: '0.8rem',
+                            width: { xs: 32, sm: 34 },
+                            height: { xs: 32, sm: 34 },
+                            fontSize: '0.7rem',
+                            flexShrink: 0,
+                            bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
+                            color: txn.type === 'INCOME' ? '#0277bd' : '#c62828',
                           }}
                         >
                           {txn.categoryName?.slice(0, 1)}
                         </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <TransactionTypeChip type={txn.type} />
-                            <Typography variant="body2" fontWeight={500}>
-                              {txn.categoryName}
-                            </Typography>
-                          </Stack>
-                        }
-                        secondary={
-                          <>
-                            <Typography variant="caption" color="text.secondary">
-                              {fmtDate(txn.txnDate)}
-                            </Typography>
-                            {txn.memo && (
-                              <Typography variant="caption" color="text.secondary">
-                                {' · '}
-                                {txn.memo}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                      <AmountText
-                        amount={txn.amount}
-                        type={txn.type === 'INCOME' ? 'income' : 'expense'}
-                        variant="body2"
-                        sx={{ ml: 1, whiteSpace: 'nowrap', mr: 8 }}
-                      />
-                    </ListItem>
-                  </Box>
-                ))}
-              </List>
-              <TablePagination
-                component="div"
-                count={filtered.length}
-                page={page}
-                onPageChange={(_, p) => setPage(p)}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(Number(e.target.value))
-                  setPage(0)
-                }}
-                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-                labelRowsPerPage="행 수"
-                labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`}
-              />
-            </>
-          ) : (
-            /* 데스크톱: Table */
-            <>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.50' }}>
-                      <TableCell width={110} sx={{ fontWeight: 600 }}>날짜</TableCell>
-                      <TableCell width={80} sx={{ fontWeight: 600 }}>유형</TableCell>
-                      <TableCell width={130} sx={{ fontWeight: 600 }}>카테고리</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>내용</TableCell>
-                      <TableCell width={150} align="right" sx={{ fontWeight: 600 }}>금액</TableCell>
-                      <TableCell width={90} align="center" sx={{ fontWeight: 600 }}>관리</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {paginated.map((txn) => (
-                      <TableRow
-                        key={txn.id}
-                        hover
-                        sx={{
-                          bgcolor:
-                            txn.type === 'INCOME'
-                              ? 'rgba(232,245,233,0.3)'
-                              : 'rgba(255,235,238,0.3)',
-                          '&:hover': { bgcolor: 'action.hover' },
-                        }}
-                      >
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {fmtDate(txn.txnDate)}
+
+                        {/* 내용 */}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap>
+                            {txn.categoryName}
                           </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <TransactionTypeChip type={txn.type} />
-                        </TableCell>
-                        <TableCell>
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <Avatar
-                              sx={{
-                                width: 24,
-                                height: 24,
-                                bgcolor: txn.categoryColor ?? '#e0e0e0',
-                                fontSize: '0.7rem',
-                              }}
-                            >
-                              {txn.categoryName?.slice(0, 1)}
-                            </Avatar>
-                            <Typography variant="body2">{txn.categoryName}</Typography>
-                          </Stack>
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            color={txn.memo ? 'text.primary' : 'text.disabled'}
-                            sx={{
-                              maxWidth: 300,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {txn.memo || '—'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <AmountText
-                            amount={txn.amount}
-                            type={txn.type === 'INCOME' ? 'income' : 'expense'}
-                            variant="body2"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
+                          {txn.memo && (
+                            <Typography variant="caption" color="text.secondary" noWrap display="block">
+                              {txn.memo}
+                            </Typography>
+                          )}
+                        </Box>
+
+                        {/* 금액 */}
+                        <Typography
+                          variant="body2"
+                          fontWeight={700}
+                          color={txn.type === 'INCOME' ? 'info.main' : 'error.main'}
+                          sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                        >
+                          {txn.type === 'INCOME' ? '+' : ''}{txn.amount.toLocaleString('ko-KR')}원
+                        </Typography>
+
+                        {/* 액션 버튼 */}
+                        <Stack direction="row" spacing={0} sx={{ flexShrink: 0 }}>
                           <Tooltip title="수정">
-                            <IconButton size="small" onClick={() => handleEditClick(txn)}>
-                              <PencilSimple size={16} />
+                            <IconButton size="small" onClick={() => handleEditClick(txn)} sx={{ p: 0.5 }}>
+                              <PencilSimple size={14} />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="삭제">
-                            <IconButton
-                              size="small"
-                              sx={{ color: 'error.main' }}
-                              onClick={() => setDeleteTarget(txn.id)}
-                            >
-                              <Trash size={16} />
+                            <IconButton size="small" onClick={() => setDeleteTarget(txn.id)} sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
+                              <Trash size={14} />
                             </IconButton>
                           </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <TablePagination
-                component="div"
-                count={filtered.length}
-                page={page}
-                onPageChange={(_, p) => setPage(p)}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(Number(e.target.value))
-                  setPage(0)
-                }}
-                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-                labelRowsPerPage="행 수"
-                labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`}
-              />
-            </>
-          )}
-        </Card>
+                        </Stack>
+                      </Stack>
+                    </Box>
+                  ))}
+                </Card>
+              )
+            })}
+          </Stack>
+        )
       )}
 
       {/* 모바일 FAB */}
       {isMobile && (
-        <Fab
-          color="primary"
-          onClick={() => setFormOpen(true)}
-          sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}
-        >
+        <Fab color="primary" onClick={() => setFormOpen(true)} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
           <Plus weight="bold" size={24} />
         </Fab>
       )}

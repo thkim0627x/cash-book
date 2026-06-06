@@ -1,17 +1,7 @@
 'use client'
 import {
-  Drawer,
-  Box,
-  Typography,
-  IconButton,
-  Divider,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Avatar,
-  Stack,
-  Chip,
+  Drawer, Box, Typography, IconButton, Divider,
+  List, ListItem, ListItemAvatar, ListItemText, Avatar, Stack, Chip,
 } from '@mui/material'
 import { X } from '@phosphor-icons/react'
 import type { Transaction } from '@/types/transaction'
@@ -21,7 +11,7 @@ import { EmptyState } from '@/components/common/EmptyState'
 interface DayDetailDrawerProps {
   open: boolean
   onClose: () => void
-  dateKey: string | null  // 'YYYY-MM-DD'
+  dateKey: string | null
   transactions: Transaction[]
 }
 
@@ -31,99 +21,43 @@ function formatDisplayDate(dateKey: string) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`
 }
 
-export function DayDetailDrawer({
-  open,
-  onClose,
-  dateKey,
-  transactions,
-}: DayDetailDrawerProps) {
-  const dayTransactions = dateKey
-    ? transactions.filter((t) => t.txnDate === dateKey)
-    : []
-
-  const income = dayTransactions
-    .filter((t) => t.type === 'INCOME')
-    .reduce((s, t) => s + t.amount, 0)
-  const expense = dayTransactions
-    .filter((t) => t.type === 'EXPENSE')
-    .reduce((s, t) => s + t.amount, 0)
+export function DayDetailDrawer({ open, onClose, dateKey, transactions }: DayDetailDrawerProps) {
+  const dayTransactions = dateKey ? transactions.filter((t) => t.txnDate === dateKey) : []
+  const income = dayTransactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const expense = dayTransactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+  const balance = income - expense
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      PaperProps={{
-        sx: { width: { xs: '100%', sm: 380 }, p: 0 },
-      }}
-    >
+    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: '100%', sm: 380 }, p: 0 } }}>
       {/* 헤더 */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          px: 3,
-          py: 2,
-          borderBottom: '1px solid',
-          borderColor: 'grey.200',
-          bgcolor: 'background.paper',
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-        }}
-      >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }}>
         <Box>
-          <Typography variant="h6">
-            {dateKey ? formatDisplayDate(dateKey) : ''}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {dayTransactions.length}건의 거래
-          </Typography>
+          <Typography variant="h6">{dateKey ? formatDisplayDate(dateKey) : ''}</Typography>
+          <Typography variant="caption" color="text.secondary">{dayTransactions.length}건의 거래</Typography>
         </Box>
-        <IconButton onClick={onClose} size="small">
-          <X size={20} />
-        </IconButton>
+        <IconButton onClick={onClose} size="small"><X size={20} /></IconButton>
       </Box>
 
       {/* 당일 요약 */}
       {dayTransactions.length > 0 && (
-        <Box
-          sx={{
-            px: 3,
-            py: 2,
-            bgcolor: 'grey.50',
-            borderBottom: '1px solid',
-            borderColor: 'grey.200',
-          }}
-        >
+        <Box sx={{ px: 3, py: 2, bgcolor: 'grey.50', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Stack direction="row" spacing={3}>
             <Box>
-              <Typography variant="caption" color="text.secondary">
-                수입
-              </Typography>
-              <Typography variant="subtitle1" color="success.main" fontWeight={700}>
+              <Typography variant="caption" color="text.secondary" display="block">수입</Typography>
+              <Typography variant="subtitle2" color="info.main" fontWeight={700}>
                 +{income.toLocaleString('ko-KR')}원
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">
-                지출
-              </Typography>
-              <Typography variant="subtitle1" color="error.main" fontWeight={700}>
-                -{expense.toLocaleString('ko-KR')}원
+              <Typography variant="caption" color="text.secondary" display="block">지출</Typography>
+              <Typography variant="subtitle2" color="error.main" fontWeight={700}>
+                {expense.toLocaleString('ko-KR')}원
               </Typography>
             </Box>
             <Box>
-              <Typography variant="caption" color="text.secondary">
-                합계
-              </Typography>
-              <Typography
-                variant="subtitle1"
-                fontWeight={700}
-                color={income - expense >= 0 ? 'success.main' : 'error.main'}
-              >
-                {(income - expense).toLocaleString('ko-KR')}원
+              <Typography variant="caption" color="text.secondary" display="block">잔액</Typography>
+              <Typography variant="subtitle2" fontWeight={700} color={balance >= 0 ? 'success.main' : 'error.main'}>
+                {balance >= 0 ? '+' : '-'}{Math.abs(balance).toLocaleString('ko-KR')}원
               </Typography>
             </Box>
           </Stack>
@@ -143,12 +77,9 @@ export function DayDetailDrawer({
                   <ListItemAvatar sx={{ minWidth: 44 }}>
                     <Avatar
                       sx={{
-                        width: 36,
-                        height: 36,
-                        bgcolor:
-                          txn.categoryColor ??
-                          (txn.type === 'INCOME' ? 'success.light' : 'error.light'),
-                        fontSize: '0.8rem',
+                        width: 36, height: 36, fontSize: '0.8rem',
+                        bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
+                        color: txn.type === 'INCOME' ? '#0277bd' : '#c62828',
                       }}
                     >
                       {txn.categoryName?.slice(0, 1)}
@@ -161,34 +92,17 @@ export function DayDetailDrawer({
                           label={txn.type === 'INCOME' ? '수입' : '지출'}
                           size="small"
                           sx={{
-                            height: 18,
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            bgcolor:
-                              txn.type === 'INCOME' ? 'success.light' : 'error.light',
-                            color:
-                              txn.type === 'INCOME' ? 'success.dark' : 'error.dark',
+                            height: 18, fontSize: '10px', fontWeight: 600,
+                            bgcolor: txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee',
+                            color: txn.type === 'INCOME' ? '#0277bd' : '#c62828',
                           }}
                         />
-                        <Typography variant="body2" fontWeight={500}>
-                          {txn.categoryName}
-                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>{txn.categoryName}</Typography>
                       </Stack>
                     }
-                    secondary={
-                      txn.memo ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {txn.memo}
-                        </Typography>
-                      ) : null
-                    }
+                    secondary={txn.memo ? <Typography variant="caption" color="text.secondary">{txn.memo}</Typography> : null}
                   />
-                  <AmountText
-                    amount={txn.amount}
-                    type={txn.type === 'INCOME' ? 'income' : 'expense'}
-                    variant="body2"
-                    sx={{ ml: 1, whiteSpace: 'nowrap' }}
-                  />
+                  <AmountText amount={txn.amount} type={txn.type === 'INCOME' ? 'income' : 'expense'} variant="body2" sx={{ ml: 1, whiteSpace: 'nowrap' }} />
                 </ListItem>
               </Box>
             ))}

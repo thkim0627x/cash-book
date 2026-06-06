@@ -75,9 +75,9 @@ export function RecentTransactions({ transactions, loading, onAdd, onDelete }: P
                   <Avatar
                     sx={{
                       width: 36, height: 36,
-                      bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#e8f5e9' : '#ffebee'),
+                      bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
                       fontSize: '0.75rem',
-                      color: txn.type === 'INCOME' ? 'success.dark' : 'error.dark',
+                      color: txn.type === 'INCOME' ? '#0277bd' : '#c62828',
                       flexShrink: 0,
                     }}
                   >
@@ -96,9 +96,9 @@ export function RecentTransactions({ transactions, loading, onAdd, onDelete }: P
                   <Stack alignItems="flex-end" spacing={0} sx={{ flexShrink: 0 }}>
                     <Typography
                       variant="body2" fontWeight={700}
-                      color={txn.type === 'INCOME' ? 'success.main' : 'error.main'}
+                      color={txn.type === 'INCOME' ? 'info.main' : 'error.main'}
                     >
-                      {txn.type === 'INCOME' ? '+' : '-'}{txn.amount.toLocaleString('ko-KR')}원
+                      {txn.type === 'INCOME' ? '+' : ''}{txn.amount.toLocaleString('ko-KR')}원
                     </Typography>
                   </Stack>
 
