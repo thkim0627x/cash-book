@@ -7,7 +7,7 @@ import {
 } from '@mui/material'
 import {
   Bank, CreditCard, Money, Bag, Gear, CaretDown, CaretUp,
-  Scales, X, ArrowRight, Repeat, Plus,
+  Scales, X, Repeat, Plus,
 } from '@phosphor-icons/react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -15,6 +15,7 @@ import { assetService } from '@/services/asset.service'
 import { subscriptionService } from '@/services/subscription.service'
 import type { Asset, AssetType } from '@/types/asset'
 import { BILLING_CYCLE_LABELS } from '@/types/subscription'
+import { AssetManageModal } from '@/features/assets/AssetManageModal'
 
 // ── 카테고리 설정 ────────────────────────────────────────────────────────────
 type AssetClass = 'ASSET' | 'LIABILITY'
@@ -87,7 +88,6 @@ function SummaryBar({ totalAssets, totalLiab, netWorth, loading }: {
                 fontWeight={800} color={item.color}
                 sx={{ fontSize: { xs: '0.8rem', sm: '1rem', md: '1.1rem' }, lineHeight: 1.2 }}
               >
-                {item.label === '부채' && item.value > 0 && '-'}
                 {Math.abs(item.value).toLocaleString('ko-KR')}
                 <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.25, fontSize: { xs: '0.6rem', sm: '0.7rem' } }}>원</Typography>
               </Typography>
@@ -96,50 +96,6 @@ function SummaryBar({ totalAssets, totalLiab, netWorth, loading }: {
         </Card>
       ))}
     </Box>
-  )
-}
-
-// ── 자산 구성 바 ──────────────────────────────────────────────────────────────
-function CompositionBar({ byType, totalAssets, loading }: {
-  byType: Record<AssetType, number>; totalAssets: number; loading: boolean
-}) {
-  const segments = useMemo(() => {
-    if (totalAssets === 0) return []
-    return ASSET_ORDER
-      .filter(t => CATEGORY_CONFIG[t].cls === 'ASSET' && (byType[t] ?? 0) > 0)
-      .map(t => ({
-        type: t,
-        pct: Math.round(((byType[t] ?? 0) / totalAssets) * 100),
-        ...CATEGORY_CONFIG[t],
-      }))
-  }, [byType, totalAssets])
-
-  if (loading) return <Skeleton height={52} sx={{ mb: 2, borderRadius: 1 }} />
-  if (segments.length === 0) return null
-
-  return (
-    <Card sx={{ borderRadius: 1, mb: 2 }}>
-      <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
-        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" sx={{ mb: 1 }}>
-          자산 구성
-        </Typography>
-        <Box sx={{ display: 'flex', height: 6, borderRadius: 1, overflow: 'hidden', mb: 1.5, gap: '2px' }}>
-          {segments.map((s) => (
-            <Box key={s.type} sx={{ width: `${s.pct}%`, bgcolor: s.fg, borderRadius: 0.5, opacity: 0.85, transition: 'width 0.4s' }} />
-          ))}
-        </Box>
-        <Stack direction="row" flexWrap="wrap" sx={{ gap: '4px 14px' }}>
-          {segments.map((s) => (
-            <Stack key={s.type} direction="row" alignItems="center" spacing={0.5}>
-              <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: s.fg, flexShrink: 0 }} />
-              <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', lineHeight: 1 }}>
-                {s.label} {s.pct}%
-              </Typography>
-            </Stack>
-          ))}
-        </Stack>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -171,7 +127,7 @@ function AssetRow({ asset, isSelected, onClick }: {
       </Box>
       <Typography
         variant="body2" fontWeight={700} flexShrink={0}
-        color={cfg.cls === 'LIABILITY' ? 'error.main' : 'text.primary'}
+        color={cfg.cls === 'LIABILITY' ? 'error.main' : 'info.main'}
       >
         {asset.initialAmount.toLocaleString('ko-KR')}
         <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.25 }}>원</Typography>
@@ -367,8 +323,7 @@ function DetailPanel({ asset, onClose, isDrawer = false }: {
           <Icon size={32} color={cfg.fg} />
         </Box>
         <Box textAlign="center">
-          <Typography variant="h5" fontWeight={800} color={isLiability ? 'error.main' : 'text.primary'}>
-            {isLiability && asset.initialAmount > 0 && '-'}
+          <Typography variant="h5" fontWeight={800} color={isLiability ? 'error.main' : 'info.main'}>
             {asset.initialAmount.toLocaleString('ko-KR')}
             <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 0.5 }}>원</Typography>
           </Typography>
@@ -411,6 +366,7 @@ export default function AssetsPage() {
 
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [manageOpen, setManageOpen] = useState(false)
 
   const { data: assetRes, isLoading: assetLoading, isError } = useQuery({
     queryKey: ['assets'],
@@ -435,7 +391,6 @@ export default function AssetsPage() {
   const listContent = (
     <Box>
       <SummaryBar totalAssets={totalAssets} totalLiab={totalLiab} netWorth={netWorth} loading={assetLoading} />
-      <CompositionBar byType={byType} totalAssets={totalAssets} loading={assetLoading} />
 
       {isError && <Alert severity="error" sx={{ mb: 2 }}>데이터를 불러오는 중 오류가 발생했습니다.</Alert>}
 
@@ -492,7 +447,7 @@ export default function AssetsPage() {
         <Button
           size="small" variant="outlined"
           startIcon={<Gear size={14} />}
-          onClick={() => router.push('/settings')}
+          onClick={() => setManageOpen(true)}
           sx={{ fontSize: '0.75rem', height: 30 }}
         >
           자산 관리
@@ -536,10 +491,13 @@ export default function AssetsPage() {
 
       {/* 모바일 FAB */}
       {isMobile && (
-        <Fab color="primary" onClick={() => router.push('/settings')} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
+        <Fab color="primary" onClick={() => setManageOpen(true)} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
           <Gear weight="bold" size={24} />
         </Fab>
       )}
+
+      {/* 자산 관리 모달 */}
+      <AssetManageModal open={manageOpen} onClose={() => setManageOpen(false)} />
     </Box>
   )
 }
