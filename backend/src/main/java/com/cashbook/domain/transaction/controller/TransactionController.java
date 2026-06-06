@@ -68,6 +68,13 @@ public class TransactionController {
         return ApiResponse.ok(transactionService.getSummary(userId, year, month));
     }
 
+    /** GET /api/transactions/summary/alltime — 전체기간 수입/지출 요약 */
+    @GetMapping("/summary/alltime")
+    public ApiResponse<TransactionSummaryResponse> getAllTimeSummary() {
+        Long userId = currentUserId();
+        return ApiResponse.ok(transactionService.getAllTimeSummary(userId));
+    }
+
     /** PUT /api/transactions/{id} — 거래내역 수정 */
     @PutMapping("/{id}")
     public ApiResponse<TransactionResponse> update(

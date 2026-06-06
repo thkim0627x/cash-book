@@ -107,6 +107,21 @@
           AND  deleted_at IS NULL
     </select>
 
+    <!-- ─────── 전체기간 수입/지출 요약 (날짜 필터 없음) ─────── -->
+    <select id="getAllTimeSummary" resultMap="SummaryResultMap">
+        SELECT
+            COALESCE(SUM(CASE WHEN type = 'INCOME'  THEN amount ELSE 0 END), 0) AS total_income,
+            COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS total_expense,
+            COALESCE(SUM(CASE WHEN type = 'INCOME'  THEN amount
+                              WHEN type = 'EXPENSE' THEN -amount
+                              ELSE 0 END), 0)                                    AS balance,
+            0 AS year,
+            0 AS month
+        FROM   transactions
+        WHERE  user_id     = #{userId}
+          AND  deleted_at IS NULL
+    </select>
+
     <!-- ─────── Soft Delete (본인 소유만) ─────── -->
     <update id="softDelete">
         UPDATE transactions

@@ -40,6 +40,11 @@ export const transactionService = {
     return res.data
   },
 
+  getAllTimeSummary: async (): Promise<ApiResponse<{ totalIncome: number; totalExpense: number; balance: number }>> => {
+    const res = await apiClient.get('/api/transactions/summary/alltime')
+    return res.data
+  },
+
   getSummary: (transactions: Transaction[]): TransactionSummary => {
     const totalIncome = transactions
       .filter((t) => t.type === 'INCOME')

@@ -16,8 +16,17 @@ export function ThemeSelector() {
   const { preset, setPreset } = useThemeStore()
 
   return (
-    <Box>
-      <Stack direction="row" spacing={2}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'row',
+        gap: 2,
+        overflowX: 'auto',
+        pb: 0.5,
+        '&::-webkit-scrollbar': { display: 'none' },
+        scrollbarWidth: 'none',
+      }}
+    >
         {presets.map((p) => {
           const selected = preset === p.id
           return (
@@ -33,6 +42,7 @@ export function ThemeSelector() {
                 borderColor: selected ? 'primary.main' : 'divider',
                 transition: 'border-color 0.15s',
                 minWidth: 80,
+              flexShrink: 0,
               }}
             >
               <Box
@@ -55,7 +65,6 @@ export function ThemeSelector() {
             </ButtonBase>
           )
         })}
-      </Stack>
     </Box>
   )
 }

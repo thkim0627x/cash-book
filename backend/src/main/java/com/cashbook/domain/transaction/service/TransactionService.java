@@ -115,6 +115,12 @@ public class TransactionService {
         return transactionMapper.getSummary(userId, startDate, endDate, year, month);
     }
 
+    /** 전체기간 수입/지출 요약 */
+    @Transactional(readOnly = true)
+    public TransactionSummaryResponse getAllTimeSummary(Long userId) {
+        return transactionMapper.getAllTimeSummary(userId);
+    }
+
     /** 거래내역 Soft Delete */
     @Transactional
     public void delete(Long userId, Long id) {

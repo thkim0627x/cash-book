@@ -51,6 +51,9 @@ public interface TransactionMapper {
             @Param("month")     int month
     );
 
+    /** 전체기간 수입/지출 요약 (날짜 필터 없음) */
+    TransactionSummaryResponse getAllTimeSummary(@Param("userId") Long userId);
+
     /**
      * Soft Delete — 자기 소유 거래내역만 삭제 가능 (userId 조건 포함)
      * @return 업데이트된 행 수 (0이면 not found 또는 forbidden)

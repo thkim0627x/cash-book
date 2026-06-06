@@ -148,14 +148,20 @@ export default function DashboardPage() {
     queryFn: () => assetService.getAll(),
   })
 
+  const { data: allTimeRes, isLoading: allTimeLoading } = useQuery({
+    queryKey: ['transactions-alltime'],
+    queryFn: () => transactionService.getAllTimeSummary(),
+  })
+
   const transactions = txnRes?.data?.content ?? []
   const assets = assetRes?.data ?? []
 
   const assetItems = assets.filter((a) => getAssetClass(a.assetType) === 'ASSET')
   const liabilityItems = assets.filter((a) => getAssetClass(a.assetType) === 'LIABILITY')
-  const totalAsset = assetItems.reduce((s, a) => s + a.currentBalance, 0)
-  const totalLiability = liabilityItems.reduce((s, a) => s + a.currentBalance, 0)
-  const netWorth = totalAsset - totalLiability
+  const totalAsset = assetItems.reduce((s, a) => s + a.initialAmount, 0)
+  const totalLiability = liabilityItems.reduce((s, a) => s + a.initialAmount, 0)
+  const allTimeNet = Number(allTimeRes?.data?.balance ?? 0)
+  const netWorth = totalAsset - totalLiability + allTimeNet
 
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => transactionService.remove(id),
@@ -213,7 +219,7 @@ export default function DashboardPage() {
           value={Math.abs(netWorth)}
           color={netWorth >= 0 ? 'success.main' : 'error.main'}
           prefix={netWorth < 0 ? '-' : ''}
-          loading={assetLoading}
+          loading={assetLoading || allTimeLoading}
         />
       </Box>
 
