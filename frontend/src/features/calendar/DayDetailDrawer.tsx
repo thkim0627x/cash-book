@@ -78,8 +78,12 @@ export function DayDetailDrawer({ open, onClose, dateKey, transactions }: DayDet
                     <Avatar
                       sx={{
                         width: 36, height: 36, fontSize: '0.8rem',
-                        bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
-                        color: txn.type === 'INCOME' ? '#0277bd' : '#c62828',
+                        ...(txn.categoryColor
+                          ? { bgcolor: txn.categoryColor, color: '#fff' }
+                          : txn.type === 'INCOME'
+                            ? { bgcolor: '#e1f5fe', color: '#0277bd' }
+                            : { bgcolor: '#ffebee', color: '#c62828' }
+                        ),
                       }}
                     >
                       {txn.categoryName?.slice(0, 1)}

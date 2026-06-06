@@ -262,8 +262,6 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
         px: { xs: 2, sm: 2.5 }, py: { xs: 0.9, sm: 1 },
         cursor: 'pointer',
         bgcolor: isSelected ? 'action.selected' : 'transparent',
-        borderLeft: '3px solid',
-        borderColor: txn.type === 'INCOME' ? 'info.main' : 'error.main',
         transition: 'background-color 0.12s',
         '&:hover': { bgcolor: isSelected ? 'action.selected' : 'action.hover' },
         '&:hover .txn-actions': { opacity: 1 },
@@ -271,9 +269,13 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
     >
       <Avatar
         sx={{
-          width: 30, height: 30, fontSize: '0.65rem', flexShrink: 0,
-          bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
-          color: txn.type === 'INCOME' ? '#0277bd' : '#c62828',
+          width: 32, height: 32, fontSize: '0.7rem', flexShrink: 0,
+          ...(txn.categoryColor
+            ? { bgcolor: txn.categoryColor, color: '#fff' }
+            : txn.type === 'INCOME'
+              ? { bgcolor: '#e1f5fe', color: '#0277bd' }
+              : { bgcolor: '#ffebee', color: '#c62828' }
+          ),
         }}
       >
         {txn.categoryName?.slice(0, 1)}
@@ -467,7 +469,7 @@ function ListSkeleton() {
   return (
     <Box>
       {[1, 2, 3].map((g) => (
-        <Box key={g} sx={{ mb: 1.5, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+        <Box key={g} sx={{ mb: 1.5, borderRadius: 1, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}>
           <Box sx={{ px: 2.5, py: 0.75, bgcolor: 'grey.50' }}>
             <Skeleton width={80} height={20} />
           </Box>
@@ -613,7 +615,7 @@ export default function TransactionsPage() {
           {groupedByDate.map(([dateKey, txns]) => (
             <Box
               key={dateKey}
-              sx={{ borderRadius: 2.5, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}
+              sx={{ borderRadius: 1, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}
             >
               <DateHeader dateKey={dateKey} txns={txns} />
               {txns.map((txn, idx) => (
@@ -639,7 +641,7 @@ export default function TransactionsPage() {
   // ── 달력 뷰 ──────────────────────────────────────────────────────────────
   const calendarContent = (
     <>
-      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}>
+      <Box sx={{ borderRadius: 1, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}>
         {isLoading ? <Box sx={{ p: 2 }}><Skeleton height={300} /></Box> : (
           <CalendarGrid
             year={year} month={month} transactions={allTransactions}
@@ -693,7 +695,7 @@ export default function TransactionsPage() {
               flex: 1, minWidth: 0,
               position: 'sticky', top: 80,
               maxHeight: 'calc(100dvh - 100px)', overflowY: 'auto',
-              borderRadius: 2.5, border: '1px solid', borderColor: 'divider',
+              borderRadius: 1, border: '1px solid', borderColor: 'divider',
               bgcolor: 'background.paper',
             }}
           >

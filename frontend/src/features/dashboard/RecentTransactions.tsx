@@ -74,11 +74,13 @@ export function RecentTransactions({ transactions, loading, onAdd, onDelete }: P
                 <Stack direction="row" alignItems="center" spacing={1.5} sx={{ py: 1 }}>
                   <Avatar
                     sx={{
-                      width: 36, height: 36,
-                      bgcolor: txn.categoryColor ?? (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
-                      fontSize: '0.75rem',
-                      color: txn.type === 'INCOME' ? '#0277bd' : '#c62828',
-                      flexShrink: 0,
+                      width: 36, height: 36, fontSize: '0.75rem', flexShrink: 0,
+                      ...(txn.categoryColor
+                        ? { bgcolor: txn.categoryColor, color: '#fff' }
+                        : txn.type === 'INCOME'
+                          ? { bgcolor: '#e1f5fe', color: '#0277bd' }
+                          : { bgcolor: '#ffebee', color: '#c62828' }
+                      ),
                     }}
                   >
                     {txn.categoryName?.slice(0, 1)}
