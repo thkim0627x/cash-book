@@ -24,6 +24,7 @@ export const SIDEBAR_NAV: NavItem[] = [
   { label: '홈', icon: House, path: '/dashboard' },
   { label: '내역', icon: Receipt, path: '/transactions' },
   { label: '달력', icon: CalendarBlank, path: '/calendar' },
+  { label: '자산', icon: Bank, path: '/assets' },
   { label: '예산', icon: Wallet, path: '/budget' },
   { label: '통계', icon: ChartBar, path: '/statistics' },
   { label: '청년혜택', icon: Gift, path: '/benefits' },
