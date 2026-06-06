@@ -120,7 +120,7 @@ export function LoginForm() {
         sx={{
           maxWidth: 420,
           width: '100%',
-          borderRadius: 4,
+          borderRadius: 1,
           p: { xs: 2, sm: 4 },
         }}
       >

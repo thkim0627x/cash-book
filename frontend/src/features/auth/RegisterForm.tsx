@@ -130,7 +130,7 @@ export function RegisterForm() {
         py: 4,
       }}
     >
-      <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 4, p: { xs: 2, sm: 4 } }}>
+      <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 1, p: { xs: 2, sm: 4 } }}>
         <CardContent sx={{ p: 0 }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Typography variant="h5" color="primary" fontWeight={700}>

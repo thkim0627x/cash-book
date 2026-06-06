@@ -59,7 +59,7 @@ export function buildTheme(preset: ThemePreset = 'indigo'): Theme {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 14,
+            borderRadius: 8,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04)',
             border: `1px solid ${p.divider}`,
           },

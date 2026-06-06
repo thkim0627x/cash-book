@@ -23,7 +23,7 @@ export function RecentTransactions({ transactions, loading, onAdd, onDelete }: P
   const router = useRouter()
 
   return (
-    <Card sx={{ height: '100%', borderRadius: 3 }}>
+    <Card sx={{ height: '100%', borderRadius: 1 }}>
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
 
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>

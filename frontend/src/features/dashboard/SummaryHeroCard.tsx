@@ -31,7 +31,7 @@ export function SummaryHeroCard({ summary, loading, month }: Props) {
   return (
     <Card
       sx={{
-        borderRadius: 3,
+        borderRadius: 1,
         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
         color: 'white',
         boxShadow: `0 8px 24px ${theme.palette.primary.main}44`,

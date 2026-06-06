@@ -100,7 +100,7 @@ export default function SettingsPage() {
         <SettingsSection title="카테고리 관리" description="수입·지출 카테고리를 직접 만들고 관리하세요.">
           <ListItemButton
             onClick={() => router.push('/categories')}
-            sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', maxWidth: 420 }}
+            sx={{ borderRadius: 1, border: '1px solid', borderColor: 'divider', maxWidth: 420 }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
               <Tag size={22} />

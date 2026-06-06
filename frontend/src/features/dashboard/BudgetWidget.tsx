@@ -56,7 +56,7 @@ export function BudgetWidget({ year, month }: BudgetWidgetProps) {
   const barColor = totalPct >= 100 ? 'error' : totalPct >= 80 ? 'warning' : 'primary'
 
   return (
-    <Card sx={{ height: '100%', borderRadius: 3 }}>
+    <Card sx={{ height: '100%', borderRadius: 1 }}>
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Typography variant="h6">예산 현황</Typography>

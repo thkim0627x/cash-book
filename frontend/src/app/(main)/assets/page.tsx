@@ -100,7 +100,7 @@ export default function AssetsPage() {
       <Card
         sx={{
           mb: 3,
-          borderRadius: 3,
+          borderRadius: 1,
           background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
           color: 'white',
           boxShadow: `0 8px 24px ${theme.palette.primary.main}44`,
@@ -151,7 +151,7 @@ export default function AssetsPage() {
         <Grid container spacing={2} sx={{ mb: 3 }}>
           {[1, 2, 3].map((i) => (
             <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
-              <Card sx={{ borderRadius: 3 }}>
+              <Card sx={{ borderRadius: 1 }}>
                 <CardContent>
                   <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
                   <Skeleton width="40%" height={32} />
@@ -161,7 +161,7 @@ export default function AssetsPage() {
           ))}
         </Grid>
       ) : assets.length === 0 ? (
-        <Card sx={{ mb: 3, borderRadius: 3 }}>
+        <Card sx={{ mb: 3, borderRadius: 1 }}>
           <CardContent>
             <Stack alignItems="center" spacing={2} sx={{ py: 4 }}>
               <Bank size={48} color={theme.palette.text.disabled} />
@@ -194,7 +194,7 @@ export default function AssetsPage() {
                     <Grid key={asset.id} size={{ xs: 12, sm: 6, md: 4 }}>
                       <Card
                         sx={{
-                          borderRadius: 3,
+                          borderRadius: 1,
                           border: '1px solid',
                           borderColor: 'divider',
                           transition: 'box-shadow 0.2s',
@@ -259,7 +259,7 @@ export default function AssetsPage() {
       )}
 
       {/* ── 구독/정기결제 ── */}
-      <Card sx={{ borderRadius: 3 }}>
+      <Card sx={{ borderRadius: 1 }}>
         <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
