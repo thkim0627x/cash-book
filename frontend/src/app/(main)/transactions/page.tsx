@@ -11,7 +11,6 @@ import {
 } from '@phosphor-icons/react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionService } from '@/services/transaction.service'
-import { categoryService } from '@/services/category.service'
 import { TransactionForm } from '@/features/transaction/TransactionForm'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CalendarGrid } from '@/features/calendar/CalendarGrid'
@@ -55,10 +54,9 @@ interface SummaryBarProps {
   summary: { totalIncome: number; totalExpense: number; balance: number }
   loading: boolean; isCurrentMonth: boolean
   onPrev: () => void; onNext: () => void
-  onAdd: () => void; isMobile: boolean
 }
 
-function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onNext, onAdd, isMobile }: SummaryBarProps) {
+function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onNext }: SummaryBarProps) {
   const cards = [
     { label: '수입', value: summary.totalIncome,       color: 'info.main',    prefix: '' },
     { label: '지출', value: summary.totalExpense,      color: 'error.main',   prefix: '' },
@@ -67,21 +65,6 @@ function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onN
 
   return (
     <Box sx={{ mb: 2 }}>
-      {/* 페이지 헤더: 제목 + 거래 추가 버튼 */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography variant="h6" fontWeight={700}>거래 내역</Typography>
-        {!isMobile && (
-          <Button
-            size="small" variant="outlined"
-            startIcon={<Plus weight="bold" size={14} />}
-            onClick={onAdd}
-            sx={{ fontSize: '0.75rem', height: 30 }}
-          >
-            거래 추가
-          </Button>
-        )}
-      </Stack>
-
       {/* 월 네비게이터 */}
       <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5} sx={{ mb: 2 }}>
         <IconButton size="small" onClick={onPrev} sx={{ p: 0.5 }}><CaretLeft size={18} /></IconButton>
@@ -134,22 +117,18 @@ function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onN
 // ── 필터 + 보조 도구 (정보 계층 분리) ────────────────────────────────────────
 interface FilterBarProps {
   typeFilter: 'ALL' | TransactionType
-  categoryFilter: string
   searchQuery: string
   viewMode: 'list' | 'calendar'
-  categoryOptions: { id: number; name: string; type: string }[]
   totalCount: number
   onTypeChange: (v: 'ALL' | TransactionType) => void
-  onCategoryChange: (v: string) => void
   onSearchChange: (v: string) => void
   onViewChange: (v: 'list' | 'calendar') => void
   onExcel: () => void
 }
 
 function FilterBar({
-  typeFilter, categoryFilter, searchQuery, viewMode,
-  categoryOptions, totalCount,
-  onTypeChange, onCategoryChange, onSearchChange, onViewChange, onExcel,
+  typeFilter, searchQuery, viewMode, totalCount,
+  onTypeChange, onSearchChange, onViewChange, onExcel,
 }: FilterBarProps) {
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -226,30 +205,6 @@ function FilterBar({
         </Stack>
       </Stack>
 
-      {/* Row 2: 카테고리 칩 (조건부, 가로 스크롤) */}
-      {typeFilter !== 'ALL' && categoryOptions.length > 0 && (
-        <Box sx={{
-          display: 'flex', gap: 0.75, overflowX: 'auto',
-          pb: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
-        }}>
-          <Chip
-            label="전체 카테고리" size="small"
-            onClick={() => onCategoryChange('ALL')}
-            variant={categoryFilter === 'ALL' ? 'filled' : 'outlined'}
-            color={categoryFilter === 'ALL' ? 'primary' : 'default'}
-            sx={{ height: 24, fontSize: '0.72rem', flexShrink: 0 }}
-          />
-          {categoryOptions.map((cat) => (
-            <Chip
-              key={cat.id} label={cat.name} size="small"
-              onClick={() => onCategoryChange(String(cat.id))}
-              variant={categoryFilter === String(cat.id) ? 'filled' : 'outlined'}
-              color={categoryFilter === String(cat.id) ? 'primary' : 'default'}
-              sx={{ height: 24, fontSize: '0.72rem', flexShrink: 0 }}
-            />
-          ))}
-        </Box>
-      )}
     </Box>
   )
 }
@@ -506,7 +461,6 @@ export default function TransactionsPage() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [typeFilter, setTypeFilter] = useState<'ALL' | TransactionType>('ALL')
-  const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null)
@@ -530,14 +484,7 @@ export default function TransactionsPage() {
     queryKey: ['transactions', year, month],
     queryFn: () => transactionService.getList({ year, month, size: 500 }),
   })
-  const { data: catRes } = useQuery({
-    queryKey: ['categories'],
-    queryFn: categoryService.getAll,
-    staleTime: Infinity,
-  })
-
   const allTransactions = txnRes?.data?.content ?? []
-  const categories = catRes?.data ?? []
 
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => transactionService.remove(id),
@@ -554,7 +501,6 @@ export default function TransactionsPage() {
   const filtered = useMemo(() => {
     let list = allTransactions
     if (typeFilter !== 'ALL') list = list.filter(t => t.type === typeFilter)
-    if (categoryFilter !== 'ALL') list = list.filter(t => String(t.categoryId) === categoryFilter)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       list = list.filter(t =>
@@ -562,7 +508,7 @@ export default function TransactionsPage() {
       )
     }
     return list
-  }, [allTransactions, typeFilter, categoryFilter, searchQuery])
+  }, [allTransactions, typeFilter, searchQuery])
 
   const groupedByDate = useMemo(() => {
     const map: Record<string, Transaction[]> = {}
@@ -573,12 +519,7 @@ export default function TransactionsPage() {
     return Object.entries(map).sort(([a], [b]) => b.localeCompare(a))
   }, [filtered])
 
-  const summary = transactionService.getSummary(filtered)
-
-  const categoryOptions = useMemo(
-    () => typeFilter === 'ALL' ? [] : categories.filter(c => c.type === typeFilter),
-    [categories, typeFilter]
-  )
+  const summary = transactionService.getSummary(allTransactions)
 
   const prevMonth = () => {
     if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1)
@@ -589,7 +530,7 @@ export default function TransactionsPage() {
     setSelectedTxn(null)
   }
 
-  const handleTypeChange = (v: 'ALL' | TransactionType) => { setTypeFilter(v); setCategoryFilter('ALL') }
+  const handleTypeChange = (v: 'ALL' | TransactionType) => { setTypeFilter(v) }
   const handleSelectTxn = (txn: Transaction) => {
     setSelectedTxn(txn)
     if (isMobile) setMobileDrawerOpen(true)
@@ -673,16 +614,14 @@ export default function TransactionsPage() {
         year={year} month={month} summary={summary} loading={isLoading}
         isCurrentMonth={isCurrentMonth}
         onPrev={prevMonth} onNext={nextMonth}
-        onAdd={handleAddClick} isMobile={isMobile}
       />
 
       {/* ── 필터 바 ── */}
       <FilterBar
-        typeFilter={typeFilter} categoryFilter={categoryFilter}
+        typeFilter={typeFilter}
         searchQuery={searchQuery} viewMode={viewMode}
-        categoryOptions={categoryOptions} totalCount={filtered.length}
+        totalCount={filtered.length}
         onTypeChange={handleTypeChange}
-        onCategoryChange={setCategoryFilter}
         onSearchChange={setSearchQuery}
         onViewChange={setViewMode}
         onExcel={handleExcel}
