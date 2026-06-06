@@ -56,8 +56,8 @@ export default function CalendarPage() {
                   <Typography variant="caption" color="text.secondary" display="block">
                     총 수입
                   </Typography>
-                  <Typography variant="subtitle2" color="success.main" fontWeight={700}>
-                    +{summary.totalIncome.toLocaleString('ko-KR')}원
+                  <Typography variant="subtitle2" color="info.main" fontWeight={700}>
+                    {summary.totalIncome.toLocaleString('ko-KR')}원
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
@@ -65,7 +65,7 @@ export default function CalendarPage() {
                     총 지출
                   </Typography>
                   <Typography variant="subtitle2" color="error.main" fontWeight={700}>
-                    -{summary.totalExpense.toLocaleString('ko-KR')}원
+                    {summary.totalExpense.toLocaleString('ko-KR')}원
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>

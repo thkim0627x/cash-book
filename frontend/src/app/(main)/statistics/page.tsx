@@ -135,9 +135,9 @@ export default function StatisticsPage() {
       {/* ── Row 1: 6개월 누계 요약 카드 ── */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {[
-          { label: '6개월 총 수입', value: totalSummary.totalIncome, color: 'success.main', prefix: '+' },
-          { label: '6개월 총 지출', value: totalSummary.totalExpense, color: 'error.main', prefix: '-' },
-          { label: '6개월 순수익', value: totalSummary.balance, color: totalSummary.balance >= 0 ? 'primary.main' : 'error.main', prefix: '' },
+          { label: '6개월 총 수입', value: totalSummary.totalIncome, color: 'info.main', prefix: '' },
+          { label: '6개월 총 지출', value: totalSummary.totalExpense, color: 'error.main', prefix: '' },
+          { label: '6개월 순수익', value: Math.abs(totalSummary.balance), color: totalSummary.balance >= 0 ? 'success.main' : 'error.main', prefix: totalSummary.balance < 0 ? '-' : '' },
         ].map(({ label, value, color, prefix }) => (
           <Grid key={label} size={{ xs: 12, sm: 4 }}>
             <Card sx={{ height: '100%' }}>

@@ -86,7 +86,7 @@ function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onN
           <Box>
             <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.2}>수입</Typography>
             <Typography variant="body2" fontWeight={700} color="info.main" lineHeight={1.4}>
-              +{summary.totalIncome.toLocaleString('ko-KR')}
+              {summary.totalIncome.toLocaleString('ko-KR')}
             </Typography>
           </Box>
           <Box>
@@ -100,7 +100,7 @@ function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onN
             <Typography variant="body2" fontWeight={700} lineHeight={1.4}
               color={summary.balance >= 0 ? 'success.main' : 'error.main'}
             >
-              {summary.balance >= 0 ? '+' : '-'}{Math.abs(summary.balance).toLocaleString('ko-KR')}
+              {summary.balance < 0 ? '-' : ''}{Math.abs(summary.balance).toLocaleString('ko-KR')}
             </Typography>
           </Box>
           {!isMobile && (
@@ -294,7 +294,7 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
         variant="body2" fontWeight={700} flexShrink={0} noWrap
         color={txn.type === 'INCOME' ? 'info.main' : 'error.main'}
       >
-        {txn.type === 'INCOME' ? '+' : ''}{txn.amount.toLocaleString('ko-KR')}원
+        {txn.amount.toLocaleString('ko-KR')}원
       </Typography>
 
       {/* 데스크톱 hover 액션 */}
@@ -319,34 +319,35 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
 
 // ── 날짜 그룹 헤더 ──────────────────────────────────────────────────────────
 function DateHeader({ dateKey, txns }: { dateKey: string; txns: Transaction[] }) {
-  const { dd, dayShort, isSat, isRed, holiday } = getDateInfo(dateKey)
+  const { dd, dayFull, isSat, isSun, holiday } = getDateInfo(dateKey)
   const dayIncome = txns.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
   const dayExpense = txns.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+
+  // 토요일+공휴일이면 빨간색, 토요일만이면 파란색, 일요일/공휴일이면 빨간색
+  const showSatBadge = isSat && !holiday
+  const showRedBadge = isSun || !!holiday
+  const dateColor = showRedBadge ? 'error.main' : showSatBadge ? 'info.main' : 'text.primary'
 
   return (
     <Box
       sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         px: { xs: 2, sm: 2.5 }, py: 0.75,
-        bgcolor: isRed ? 'rgba(198,40,40,0.04)' : isSat ? 'rgba(2,119,189,0.04)' : 'grey.50',
+        bgcolor: 'grey.50',
         borderBottom: '1px solid', borderColor: 'divider',
         position: 'sticky', top: 0, zIndex: 1,
       }}
     >
       <Stack direction="row" alignItems="center" spacing={0.75}>
-        <Typography
-          fontWeight={800}
-          color={isRed ? 'error.main' : isSat ? 'info.main' : 'text.primary'}
-          sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, lineHeight: 1 }}
-        >
+        <Typography fontWeight={800} color={dateColor} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, lineHeight: 1 }}>
           {dd}
         </Typography>
-        <Typography variant="caption" color="text.secondary">{dayShort}</Typography>
-        {isSat && <Chip label="토" size="small" sx={{ height: 16, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#e1f5fe', color: '#0277bd', px: 0 }} />}
-        {isRed && <Chip label={holiday ?? '일'} size="small" sx={{ height: 16, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#ffebee', color: '#c62828', px: 0 }} />}
+        <Typography variant="caption" color="text.secondary">{dayFull}</Typography>
+        {showSatBadge && <Chip label="토" size="small" sx={{ height: 16, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#e1f5fe', color: '#0277bd', px: 0 }} />}
+        {showRedBadge && <Chip label={holiday ?? '일'} size="small" sx={{ height: 16, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#ffebee', color: '#c62828', px: 0 }} />}
       </Stack>
       <Stack direction="row" spacing={1.5} alignItems="center">
-        {dayIncome > 0 && <Typography variant="caption" fontWeight={700} color="info.main">+{dayIncome.toLocaleString('ko-KR')}</Typography>}
+        {dayIncome > 0 && <Typography variant="caption" fontWeight={700} color="info.main">{dayIncome.toLocaleString('ko-KR')}</Typography>}
         {dayExpense > 0 && <Typography variant="caption" fontWeight={700} color="error.main">{dayExpense.toLocaleString('ko-KR')}</Typography>}
       </Stack>
     </Box>
@@ -411,7 +412,7 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
         </Box>
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h5" fontWeight={800} color={isIncome ? 'info.main' : 'error.main'}>
-            {isIncome ? '+' : ''}{txn.amount.toLocaleString('ko-KR')}원
+            {txn.amount.toLocaleString('ko-KR')}원
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
             {txn.categoryName}
@@ -612,7 +613,7 @@ export default function TransactionsPage() {
           {groupedByDate.map(([dateKey, txns]) => (
             <Box
               key={dateKey}
-              sx={{ borderRadius: 2.5, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}
+              sx={{ borderRadius: 2.5, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}
             >
               <DateHeader dateKey={dateKey} txns={txns} />
               {txns.map((txn, idx) => (
@@ -638,7 +639,7 @@ export default function TransactionsPage() {
   // ── 달력 뷰 ──────────────────────────────────────────────────────────────
   const calendarContent = (
     <>
-      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}>
         {isLoading ? <Box sx={{ p: 2 }}><Skeleton height={300} /></Box> : (
           <CalendarGrid
             year={year} month={month} transactions={allTransactions}

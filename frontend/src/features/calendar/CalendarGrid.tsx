@@ -119,7 +119,7 @@ export function CalendarGrid({ year, month, transactions, selectedDate, onSelect
 
               {data?.income ? (
                 <Typography variant="caption" color="info.main" fontWeight={600} sx={{ fontSize: isMobile ? '9px' : '11px', lineHeight: 1.2, display: 'block' }}>
-                  +{data.income.toLocaleString('ko-KR')}
+                  {data.income.toLocaleString('ko-KR')}
                 </Typography>
               ) : null}
 

@@ -98,7 +98,7 @@ export function RecentTransactions({ transactions, loading, onAdd, onDelete }: P
                       variant="body2" fontWeight={700}
                       color={txn.type === 'INCOME' ? 'info.main' : 'error.main'}
                     >
-                      {txn.type === 'INCOME' ? '+' : ''}{txn.amount.toLocaleString('ko-KR')}원
+                      {txn.amount.toLocaleString('ko-KR')}원
                     </Typography>
                   </Stack>
 

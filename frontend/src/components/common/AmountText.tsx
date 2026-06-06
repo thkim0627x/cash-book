@@ -12,14 +12,14 @@ export function AmountText({ amount, type, showSign = true, ...props }: AmountTe
 
   if (type === 'income') {
     color = 'info.main'
-    prefix = showSign ? '+' : ''
+    prefix = ''
   } else if (type === 'expense') {
     color = 'error.main'
-    prefix = ''  // 지출은 마이너스 표시 없음
+    prefix = ''
   } else {
-    // balance
+    // balance: show '-' if negative, nothing if positive
     color = amount >= 0 ? 'success.main' : 'error.main'
-    prefix = showSign && amount >= 0 ? '+' : ''
+    prefix = amount < 0 ? '-' : ''
   }
 
   return (

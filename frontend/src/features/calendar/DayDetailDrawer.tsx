@@ -45,7 +45,7 @@ export function DayDetailDrawer({ open, onClose, dateKey, transactions }: DayDet
             <Box>
               <Typography variant="caption" color="text.secondary" display="block">수입</Typography>
               <Typography variant="subtitle2" color="info.main" fontWeight={700}>
-                +{income.toLocaleString('ko-KR')}원
+                {income.toLocaleString('ko-KR')}원
               </Typography>
             </Box>
             <Box>

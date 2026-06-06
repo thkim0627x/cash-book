@@ -175,7 +175,7 @@ export function TransactionForm({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 1,
-                color: txnType === 'INCOME' ? 'success.main' : 'error.main',
+                color: txnType === 'INCOME' ? 'info.main' : 'error.main',
                 fontWeight: 700,
               }}
             >

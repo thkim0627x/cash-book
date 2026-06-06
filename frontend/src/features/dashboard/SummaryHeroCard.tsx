@@ -67,7 +67,7 @@ export function SummaryHeroCard({ summary, loading, month }: Props) {
               <Typography variant="caption" sx={{ opacity: 0.8 }}>수입</Typography>
             </Stack>
             <Typography variant="h6" fontWeight={700}>
-              +{summary.totalIncome.toLocaleString('ko-KR')}
+              {summary.totalIncome.toLocaleString('ko-KR')}
               <Typography component="span" variant="caption" sx={{ ml: 0.5, opacity: 0.8 }}>원</Typography>
             </Typography>
           </Box>
