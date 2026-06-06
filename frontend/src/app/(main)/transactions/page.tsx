@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import {
-  Box, Chip, Typography, Stack, Alert, Skeleton, Avatar, Divider,
+  Box, Card, CardContent, Chip, Typography, Stack, Alert, Skeleton, Avatar, Divider,
   IconButton, Tooltip, Fab, Drawer, Button, InputBase, ToggleButtonGroup,
   ToggleButton, useMediaQuery, useTheme, Paper,
 } from '@mui/material'
@@ -49,7 +49,7 @@ function getDateInfo(dateStr: string) {
   }
 }
 
-// ── 컴팩트 요약 바 ──────────────────────────────────────────────────────────
+// ── 요약 영역 (자산현황과 동일한 디자인 언어) ──────────────────────────────────
 interface SummaryBarProps {
   year: number; month: number
   summary: { totalIncome: number; totalExpense: number; balance: number }
@@ -59,62 +59,79 @@ interface SummaryBarProps {
 }
 
 function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onNext, onAdd, isMobile }: SummaryBarProps) {
+  const cards = [
+    { label: '수입', value: summary.totalIncome,       color: 'info.main',    prefix: '' },
+    { label: '지출', value: summary.totalExpense,      color: 'error.main',   prefix: '' },
+    { label: '잔액', value: Math.abs(summary.balance), color: summary.balance >= 0 ? 'success.main' : 'error.main', prefix: summary.balance < 0 ? '-' : '' },
+  ]
+
   return (
-    <Box
-      sx={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 1,
-        px: { xs: 0, sm: 0 }, mb: 1.5,
-      }}
-    >
+    <Box sx={{ mb: 2 }}>
+      {/* 페이지 헤더: 제목 + 거래 추가 버튼 */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Typography variant="h6" fontWeight={700}>거래 내역</Typography>
+        {!isMobile && (
+          <Button
+            size="small" variant="outlined"
+            startIcon={<Plus weight="bold" size={14} />}
+            onClick={onAdd}
+            sx={{ fontSize: '0.75rem', height: 30 }}
+          >
+            거래 추가
+          </Button>
+        )}
+      </Stack>
+
       {/* 월 네비게이터 */}
-      <Stack direction="row" alignItems="center" spacing={0.5}>
-        <IconButton size="small" onClick={onPrev} sx={{ p: 0.5 }}><CaretLeft size={16} /></IconButton>
-        <Typography variant="h6" fontWeight={700} sx={{ minWidth: 88, textAlign: 'center', fontSize: { xs: '1rem', sm: '1.1rem' } }}>
+      <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5} sx={{ mb: 2 }}>
+        <IconButton size="small" onClick={onPrev} sx={{ p: 0.5 }}><CaretLeft size={18} /></IconButton>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ minWidth: 100, textAlign: 'center' }}>
           {year}년 {month}월
         </Typography>
         <IconButton size="small" onClick={onNext} disabled={isCurrentMonth} sx={{ p: 0.5 }}>
-          <CaretRight size={16} />
+          <CaretRight size={18} />
         </IconButton>
       </Stack>
 
-      {/* 집계 요약 */}
-      {loading ? (
-        <Skeleton width={280} height={36} />
-      ) : (
-        <Stack direction="row" spacing={{ xs: 2, sm: 3 }} alignItems="center">
-          <Box>
-            <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.2}>수입</Typography>
-            <Typography variant="body2" fontWeight={700} color="info.main" lineHeight={1.4}>
-              {summary.totalIncome.toLocaleString('ko-KR')}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.2}>지출</Typography>
-            <Typography variant="body2" fontWeight={700} color="error.main" lineHeight={1.4}>
-              {summary.totalExpense.toLocaleString('ko-KR')}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.2}>잔액</Typography>
-            <Typography variant="body2" fontWeight={700} lineHeight={1.4}
-              color={summary.balance >= 0 ? 'success.main' : 'error.main'}
-            >
-              {summary.balance < 0 ? '-' : ''}{Math.abs(summary.balance).toLocaleString('ko-KR')}
-            </Typography>
-          </Box>
-          {!isMobile && (
-            <Button variant="contained" size="small" startIcon={<Plus weight="bold" size={14} />} onClick={onAdd} sx={{ height: 32 }}>
-              거래 추가
-            </Button>
-          )}
-        </Stack>
-      )}
+      {/* 요약 카드 3개 — 자산현황과 동일한 구조 */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: { xs: 1, sm: 1.5 } }}>
+        {loading
+          ? [1, 2, 3].map(i => (
+              <Card key={i} sx={{ borderRadius: 1 }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                  <Skeleton width="55%" height={14} sx={{ mb: 0.75 }} />
+                  <Skeleton width="75%" height={24} />
+                </CardContent>
+              </Card>
+            ))
+          : cards.map(({ label, value, color, prefix }) => (
+              <Card key={label} sx={{ borderRadius: 1 }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                  <Typography
+                    variant="caption" color="text.secondary" display="block"
+                    sx={{ mb: 0.5, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                  >
+                    {label}
+                  </Typography>
+                  <Typography
+                    fontWeight={800} color={color}
+                    sx={{ fontSize: { xs: '0.8rem', sm: '1rem', md: '1.1rem' }, lineHeight: 1.2 }}
+                  >
+                    {prefix}{value.toLocaleString('ko-KR')}
+                    <Typography component="span" variant="caption" color="text.secondary"
+                      sx={{ ml: 0.25, fontSize: { xs: '0.6rem', sm: '0.7rem' } }}
+                    >원</Typography>
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))
+        }
+      </Box>
     </Box>
   )
 }
 
-// ── 필터 바 ────────────────────────────────────────────────────────────────
+// ── 필터 + 보조 도구 (정보 계층 분리) ────────────────────────────────────────
 interface FilterBarProps {
   typeFilter: 'ALL' | TransactionType
   categoryFilter: string
@@ -144,9 +161,10 @@ function FilterBar({
 
   return (
     <Box sx={{ mb: 1.5 }}>
-      {/* Row 1: 유형 + 검색/뷰/엑셀 */}
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-        <Stack direction="row" spacing={0.75} flexShrink={0}>
+      {/* Row 1: 1순위 정보(타입 필터) 좌 / 2순위 보조도구 우 — 명확히 분리 */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+        {/* 타입 필터 칩 — 주요 기능 */}
+        <Stack direction="row" spacing={0.75}>
           {typeChips.map((c) => (
             <Chip
               key={c.value}
@@ -162,79 +180,72 @@ function FilterBar({
           ))}
         </Stack>
 
-        <Box sx={{ flex: 1 }} />
+        {/* 보조 도구 — 시각적으로 분리, 크기 축소 */}
+        <Stack direction="row" alignItems="center" spacing={0.25}>
+          <Typography variant="caption" color="text.disabled" sx={{ mr: 0.75, fontSize: '0.7rem' }}>
+            {totalCount}건
+          </Typography>
 
-        <Chip label={`${totalCount}건`} size="small" variant="outlined" sx={{ height: 28, flexShrink: 0 }} />
+          {searchOpen ? (
+            <Paper sx={{
+              display: 'flex', alignItems: 'center', px: 1, height: 30,
+              border: '1px solid', borderColor: 'primary.main', borderRadius: 1.5, boxShadow: 'none',
+            }}>
+              <MagnifyingGlass size={13} style={{ flexShrink: 0, color: '#999' }} />
+              <InputBase
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="검색..."
+                sx={{ ml: 0.75, fontSize: '0.78rem', width: 90 }}
+              />
+              <IconButton size="small" sx={{ p: 0.25 }} onClick={() => { onSearchChange(''); setSearchOpen(false) }}>
+                <X size={11} />
+              </IconButton>
+            </Paper>
+          ) : (
+            <Tooltip title="검색">
+              <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ p: 0.5 }}>
+                <MagnifyingGlass size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
 
-        {/* 검색 */}
-        {searchOpen ? (
-          <Paper
-            sx={{
-              display: 'flex', alignItems: 'center', px: 1, height: 32,
-              border: '1px solid', borderColor: 'primary.main', borderRadius: 2,
-              boxShadow: 'none',
-            }}
-          >
-            <MagnifyingGlass size={14} style={{ flexShrink: 0, color: '#999' }} />
-            <InputBase
-              autoFocus
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="검색..."
-              sx={{ ml: 0.75, fontSize: '0.8rem', width: 100 }}
-            />
-            <IconButton size="small" sx={{ p: 0.25 }} onClick={() => { onSearchChange(''); setSearchOpen(false) }}>
-              <X size={12} />
-            </IconButton>
-          </Paper>
-        ) : (
-          <Tooltip title="검색">
-            <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ p: 0.75 }}>
-              <MagnifyingGlass size={16} />
-            </IconButton>
+          <Tooltip title="엑셀 다운로드">
+            <span>
+              <IconButton size="small" onClick={onExcel} disabled={totalCount === 0} sx={{ p: 0.5 }}>
+                <DownloadSimple size={15} />
+              </IconButton>
+            </span>
           </Tooltip>
-        )}
 
-        <Tooltip title="엑셀 다운로드">
-          <span>
-            <IconButton size="small" onClick={onExcel} disabled={totalCount === 0} sx={{ p: 0.75 }}>
-              <DownloadSimple size={16} />
-            </IconButton>
-          </span>
-        </Tooltip>
-
-        <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && onViewChange(v)} size="small">
-          <ToggleButton value="list" sx={{ px: 1, py: 0.4 }}><Rows size={14} /></ToggleButton>
-          <ToggleButton value="calendar" sx={{ px: 1, py: 0.4 }}><CalendarBlank size={14} /></ToggleButton>
-        </ToggleButtonGroup>
+          <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && onViewChange(v)} size="small">
+            <ToggleButton value="list" sx={{ px: 0.75, py: 0.25 }}><Rows size={13} /></ToggleButton>
+            <ToggleButton value="calendar" sx={{ px: 0.75, py: 0.25 }}><CalendarBlank size={13} /></ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
       </Stack>
 
-      {/* Row 2: 카테고리 칩 (가로 스크롤) */}
+      {/* Row 2: 카테고리 칩 (조건부, 가로 스크롤) */}
       {typeFilter !== 'ALL' && categoryOptions.length > 0 && (
-        <Box
-          sx={{
-            display: 'flex', gap: 0.75, overflowX: 'auto',
-            pb: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
-          }}
-        >
+        <Box sx={{
+          display: 'flex', gap: 0.75, overflowX: 'auto',
+          pb: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' },
+        }}>
           <Chip
-            key="all-cat"
-            label="전체 카테고리"
-            size="small"
+            label="전체 카테고리" size="small"
             onClick={() => onCategoryChange('ALL')}
             variant={categoryFilter === 'ALL' ? 'filled' : 'outlined'}
             color={categoryFilter === 'ALL' ? 'primary' : 'default'}
-            sx={{ height: 26, fontSize: '0.75rem', flexShrink: 0 }}
+            sx={{ height: 24, fontSize: '0.72rem', flexShrink: 0 }}
           />
           {categoryOptions.map((cat) => (
             <Chip
-              key={cat.id}
-              label={cat.name}
-              size="small"
+              key={cat.id} label={cat.name} size="small"
               onClick={() => onCategoryChange(String(cat.id))}
               variant={categoryFilter === String(cat.id) ? 'filled' : 'outlined'}
               color={categoryFilter === String(cat.id) ? 'primary' : 'default'}
-              sx={{ height: 26, fontSize: '0.75rem', flexShrink: 0 }}
+              sx={{ height: 24, fontSize: '0.72rem', flexShrink: 0 }}
             />
           ))}
         </Box>
