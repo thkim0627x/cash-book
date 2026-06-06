@@ -23,7 +23,6 @@ import { useForm, Controller } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { authService } from '@/services/auth.service'
 import { useToastStore } from '@/stores/toastStore'
-import { SocialLoginButtons } from './SocialLoginButtons'
 
 interface RegisterFormData {
   name: string
@@ -141,21 +140,6 @@ export function RegisterForm() {
               PlanDay에 오신 것을 환영합니다
             </Typography>
           </Box>
-
-          {/* 소셜 간편가입 */}
-          <Divider sx={{ mb: 2 }}>
-            <Typography variant="caption" color="text.secondary">
-              간편 가입
-            </Typography>
-          </Divider>
-
-          <SocialLoginButtons mode="register" />
-
-          <Divider sx={{ my: 2.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              이메일로 가입
-            </Typography>
-          </Divider>
 
           {serverError && (
             <Alert severity="error" sx={{ mb: 2 }}>
