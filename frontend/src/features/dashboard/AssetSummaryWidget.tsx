@@ -48,7 +48,7 @@ function AssetRow({ asset }: { asset: Asset }) {
         color="info.main"
         sx={{ whiteSpace: 'nowrap', ml: 1 }}
       >
-        {asset.initialAmount.toLocaleString('ko-KR')}원
+        {asset.currentBalance.toLocaleString('ko-KR')}원
       </Typography>
     </Stack>
   )
@@ -66,8 +66,8 @@ export function AssetSummaryWidget() {
   const assetItems = assets.filter((a) => getClass(a.assetType) === 'ASSET')
   const liabilityItems = assets.filter((a) => getClass(a.assetType) === 'LIABILITY')
 
-  const totalAsset = assetItems.reduce((s, a) => s + a.initialAmount, 0)
-  const totalLiability = liabilityItems.reduce((s, a) => s + a.initialAmount, 0)
+  const totalAsset = assetItems.reduce((s, a) => s + a.currentBalance, 0)
+  const totalLiability = liabilityItems.reduce((s, a) => s + a.currentBalance, 0)
   const netWorth = totalAsset - totalLiability
 
   const previewAssets = assets.slice(0, 3)

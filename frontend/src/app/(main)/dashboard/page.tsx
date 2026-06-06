@@ -153,14 +153,15 @@ export default function DashboardPage() {
 
   const assetItems = assets.filter((a) => getAssetClass(a.assetType) === 'ASSET')
   const liabilityItems = assets.filter((a) => getAssetClass(a.assetType) === 'LIABILITY')
-  const totalAsset = assetItems.reduce((s, a) => s + a.initialAmount, 0)
-  const totalLiability = liabilityItems.reduce((s, a) => s + a.initialAmount, 0)
+  const totalAsset = assetItems.reduce((s, a) => s + a.currentBalance, 0)
+  const totalLiability = liabilityItems.reduce((s, a) => s + a.currentBalance, 0)
   const netWorth = totalAsset - totalLiability
 
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => transactionService.remove(id),
     onSuccess: () => {
       queryClientInstance.invalidateQueries({ queryKey: ['transactions', year, month] })
+      queryClientInstance.invalidateQueries({ queryKey: ['assets'] })
       showToast('거래내역이 삭제되었습니다.', 'success')
       setDeleteTarget(null)
     },

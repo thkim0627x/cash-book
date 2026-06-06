@@ -16,6 +16,8 @@
         <result property="categoryName"  column="category_name"/>
         <result property="categoryIcon"  column="category_icon"/>
         <result property="categoryColor" column="category_color"/>
+        <result property="assetId"       column="asset_id"/>
+        <result property="assetName"     column="asset_name"/>
         <result property="createdAt"     column="created_at"/>
     </resultMap>
 
@@ -24,11 +26,11 @@
             parameterType="com.cashbook.domain.transaction.entity.Transaction"
             useGeneratedKeys="true"
             keyProperty="id">
-        INSERT INTO transactions (user_id, category_id, type, amount, memo, txn_date)
-        VALUES (#{userId}, #{categoryId}, #{type}, #{amount}, #{memo}, #{txnDate})
+        INSERT INTO transactions (user_id, category_id, asset_id, type, amount, memo, txn_date)
+        VALUES (#{userId}, #{categoryId}, #{assetId}, #{type}, #{amount}, #{memo}, #{txnDate})
     </insert>
 
-    <!-- ─────── 월별 거래내역 목록 (categories JOIN) ─────── -->
+    <!-- ─────── 월별 거래내역 목록 (categories + assets LEFT JOIN) ─────── -->
     <select id="findByUserIdAndMonth" resultMap="TransactionResponseMap">
         SELECT
             t.id,
@@ -40,10 +42,14 @@
             c.name  AS category_name,
             c.icon  AS category_icon,
             c.color AS category_color,
+            t.asset_id,
+            a.name  AS asset_name,
             t.created_at
         FROM   transactions t
         JOIN   categories   c ON c.id = t.category_id
                               AND c.deleted_at IS NULL
+        LEFT JOIN assets    a ON a.id = t.asset_id
+                              AND a.deleted_at IS NULL
         WHERE  t.user_id     = #{userId}
           AND  t.txn_date   BETWEEN #{startDate} AND #{endDate}
           AND  t.deleted_at IS NULL
@@ -65,6 +71,7 @@
     <update id="update" parameterType="com.cashbook.domain.transaction.entity.Transaction">
         UPDATE transactions
         SET    category_id = #{categoryId},
+               asset_id    = #{assetId},
                type        = #{type},
                amount      = #{amount},
                memo        = #{memo},

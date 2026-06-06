@@ -24,5 +24,7 @@ public class TransactionResponse {
     private String categoryName;
     private String categoryIcon;
     private String categoryColor;
+    private Long assetId;
+    private String assetName;
     private OffsetDateTime createdAt;
 }

@@ -5,11 +5,12 @@
 <mapper namespace="com.cashbook.domain.asset.mapper.AssetMapper">
 
     <resultMap id="AssetResponseMap" type="com.cashbook.domain.asset.dto.AssetResponse">
-        <id     property="id"            column="id"/>
-        <result property="name"          column="name"/>
-        <result property="initialAmount" column="initial_amount"/>
-        <result property="assetType"     column="asset_type"/>
-        <result property="createdAt"     column="created_at"/>
+        <id     property="id"             column="id"/>
+        <result property="name"           column="name"/>
+        <result property="initialAmount"  column="initial_amount"/>
+        <result property="currentBalance" column="current_balance"/>
+        <result property="assetType"      column="asset_type"/>
+        <result property="createdAt"      column="created_at"/>
     </resultMap>
 
     <resultMap id="AssetMap" type="com.cashbook.domain.asset.entity.Asset">
@@ -28,12 +29,28 @@
         VALUES (#{userId}, #{name}, #{initialAmount}, #{assetType})
     </insert>
 
+    <!-- currentBalance = initialAmount + 연결된 모든 거래내역의 순합계 -->
     <select id="findByUserId" resultMap="AssetResponseMap">
-        SELECT id, name, initial_amount, asset_type, created_at
-        FROM   assets
-        WHERE  user_id    = #{userId}
-          AND  deleted_at IS NULL
-        ORDER  BY created_at ASC
+        SELECT
+            a.id,
+            a.name,
+            a.initial_amount,
+            a.asset_type,
+            a.created_at,
+            CAST(
+                a.initial_amount + COALESCE(SUM(
+                    CASE WHEN t.type = 'INCOME'  THEN t.amount
+                         WHEN t.type = 'EXPENSE' THEN -t.amount
+                         ELSE 0 END
+                ), 0)
+            AS BIGINT) AS current_balance
+        FROM   assets a
+        LEFT JOIN transactions t ON t.asset_id = a.id
+                                 AND t.deleted_at IS NULL
+        WHERE  a.user_id    = #{userId}
+          AND  a.deleted_at IS NULL
+        GROUP  BY a.id, a.name, a.initial_amount, a.asset_type, a.created_at
+        ORDER  BY a.created_at ASC
     </select>
 
     <select id="findByIdAndUserId" resultMap="AssetMap">

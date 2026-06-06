@@ -13,6 +13,7 @@ public class Transaction {
     private Long id;
     private Long userId;
     private Long categoryId;
+    private Long assetId;          // nullable — 연결된 자산 계좌
     private String type;           // INCOME | EXPENSE
     private BigDecimal amount;
     private String memo;

@@ -10,6 +10,8 @@ export interface Transaction {
   categoryName: string
   categoryIcon: string | null
   categoryColor: string | null
+  assetId: number | null
+  assetName: string | null
 }
 
 export interface TransactionCreateRequest {
@@ -18,6 +20,7 @@ export interface TransactionCreateRequest {
   amount: number
   txnDate: string
   memo?: string
+  assetId?: number
 }
 
 export interface TransactionUpdateRequest {
@@ -25,6 +28,7 @@ export interface TransactionUpdateRequest {
   amount: number
   txnDate: string
   memo?: string
+  assetId?: number
 }
 
 export interface TransactionSummary {

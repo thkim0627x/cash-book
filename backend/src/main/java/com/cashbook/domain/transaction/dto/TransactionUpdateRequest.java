@@ -12,6 +12,9 @@ public class TransactionUpdateRequest {
     @NotNull(message = "카테고리는 필수입니다.")
     private Long categoryId;
 
+    /** 선택사항 — 연결할 자산 계좌 ID */
+    private Long assetId;
+
     @NotBlank(message = "타입은 필수입니다. (INCOME | EXPENSE)")
     private String type;
 

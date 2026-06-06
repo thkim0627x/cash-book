@@ -42,13 +42,13 @@ function useAssetStats(assets: Asset[]) {
   return useMemo(() => {
     const assetItems   = assets.filter(a => CATEGORY_CONFIG[a.assetType].cls === 'ASSET')
     const liabItems    = assets.filter(a => CATEGORY_CONFIG[a.assetType].cls === 'LIABILITY')
-    const totalAssets  = assetItems.reduce((s, a) => s + a.initialAmount, 0)
-    const totalLiab    = liabItems.reduce((s, a) => s + a.initialAmount, 0)
+    const totalAssets  = assetItems.reduce((s, a) => s + a.currentBalance, 0)
+    const totalLiab    = liabItems.reduce((s, a) => s + a.currentBalance, 0)
     const netWorth     = totalAssets - totalLiab
 
     // 자산 구성 비율
     const byType = assets.reduce<Record<AssetType, number>>((acc, a) => {
-      acc[a.assetType] = (acc[a.assetType] ?? 0) + a.initialAmount
+      acc[a.assetType] = (acc[a.assetType] ?? 0) + a.currentBalance
       return acc
     }, {} as Record<AssetType, number>)
 
@@ -129,7 +129,7 @@ function AssetRow({ asset, isSelected, onClick }: {
         variant="body2" fontWeight={700} flexShrink={0}
         color={cfg.cls === 'LIABILITY' ? 'error.main' : 'info.main'}
       >
-        {asset.initialAmount.toLocaleString('ko-KR')}
+        {asset.currentBalance.toLocaleString('ko-KR')}
         <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.25 }}>원</Typography>
       </Typography>
     </Box>
@@ -324,7 +324,7 @@ function DetailPanel({ asset, onClose, isDrawer = false }: {
         </Box>
         <Box textAlign="center">
           <Typography variant="h5" fontWeight={800} color={isLiability ? 'error.main' : 'info.main'}>
-            {asset.initialAmount.toLocaleString('ko-KR')}
+            {asset.currentBalance.toLocaleString('ko-KR')}
             <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 0.5 }}>원</Typography>
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{asset.name}</Typography>

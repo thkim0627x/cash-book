@@ -2,11 +2,12 @@ import { createTheme, type Theme } from '@mui/material/styles'
 import { indigoTheme } from './themes/indigo'
 import { greenTheme } from './themes/green'
 import { pinkTheme } from './themes/pink'
+import { sodaTheme } from './themes/soda'
 
-// 기본 테마: indigo (우선순위 indigo → green → pink)
-export type ThemePreset = 'indigo' | 'green' | 'pink'
+// 기본 테마: indigo (우선순위 indigo → green → pink → soda)
+export type ThemePreset = 'indigo' | 'green' | 'pink' | 'soda'
 
-const presets = { indigo: indigoTheme, green: greenTheme, pink: pinkTheme }
+const presets = { indigo: indigoTheme, green: greenTheme, pink: pinkTheme, soda: sodaTheme }
 
 // 수입/지출/경고 색상은 테마 교체와 무관하게 고정 (사용자 인지 일관성 우선)
 const semanticFixed = {

@@ -543,6 +543,7 @@ export default function TransactionsPage() {
     mutationFn: (id: number) => transactionService.remove(id),
     onSuccess: () => {
       queryClientInstance.invalidateQueries({ queryKey: ['transactions', year, month] })
+      queryClientInstance.invalidateQueries({ queryKey: ['assets'] })
       showToast('거래내역이 삭제되었습니다.', 'success')
       setDeleteTarget(null)
       if (selectedTxn?.id === deleteTarget) { setSelectedTxn(null); setMobileDrawerOpen(false) }

@@ -3,6 +3,10 @@
 -- SQL Editor에 붙여넣기 후 실행
 -- ============================================================
 
+-- ── transactions 테이블 asset_id 컬럼 추가 ──────────────────
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS asset_id BIGINT REFERENCES assets(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_transactions_asset_id ON transactions (asset_id) WHERE asset_id IS NOT NULL;
+
 -- ── benefits 테이블 누락 컬럼 추가 ───────────────────────────
 ALTER TABLE benefits ADD COLUMN IF NOT EXISTS external_id     VARCHAR(100);
 ALTER TABLE benefits ADD COLUMN IF NOT EXISTS host            VARCHAR(200);

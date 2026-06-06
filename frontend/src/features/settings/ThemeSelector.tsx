@@ -6,9 +6,10 @@ import type { ThemePreset } from '@/lib/theme'
 
 // 색상 원은 프리셋 식별용 대표색 (브랜드 고정값)
 const presets: { id: ThemePreset; label: string; color: string }[] = [
-  { id: 'indigo', label: '인디고', color: '#5C6BC0' }, // 기본
+  { id: 'indigo', label: '인디고', color: '#5C6BC0' },
   { id: 'green', label: '그린', color: '#41A882' },
   { id: 'pink', label: '핑크', color: '#E8789A' },
+  { id: 'soda', label: '소다', color: '#5BB5B0' },
 ]
 
 export function ThemeSelector() {

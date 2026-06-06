@@ -25,12 +25,14 @@ import { useForm, Controller } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { categoryService } from '@/services/category.service'
 import { transactionService } from '@/services/transaction.service'
+import { assetService } from '@/services/asset.service'
 import { useToastStore } from '@/stores/toastStore'
 import type { Transaction, TransactionCreateRequest, TransactionUpdateRequest } from '@/types/transaction'
 import type { TransactionType } from '@/types/category'
 
 interface TransactionFormValues {
   categoryId: string
+  assetId: string   // '' = 없음
   amount: string
   txnDate: string
   memo: string
@@ -92,12 +94,14 @@ export function TransactionForm({
     defaultValues: editTarget
       ? {
           categoryId: String(editTarget.categoryId),
+          assetId: editTarget.assetId ? String(editTarget.assetId) : '',
           amount: formatNumber(String(editTarget.amount)),
           txnDate: editTarget.txnDate,
           memo: editTarget.memo ?? '',
         }
       : {
           categoryId: '',
+          assetId: '',
           amount: '',
           txnDate: todayString(),
           memo: '',
@@ -112,6 +116,14 @@ export function TransactionForm({
   })
   const categories = (categoriesRes?.data ?? []).filter((c) => c.type === txnType)
 
+  // 자산 목록
+  const { data: assetsRes } = useQuery({
+    queryKey: ['assets'],
+    queryFn: assetService.getAll,
+    staleTime: Infinity,
+  })
+  const assets = assetsRes?.data ?? []
+
   // 등록 mutation
   const { mutate: create, isPending: isCreating } = useMutation({
     mutationFn: (data: TransactionCreateRequest) => transactionService.create(data),
@@ -119,6 +131,7 @@ export function TransactionForm({
       queryClientInstance.invalidateQueries({
         queryKey: ['transactions', defaultYear, defaultMonth],
       })
+      queryClientInstance.invalidateQueries({ queryKey: ['assets'] })
       showToast('거래내역이 등록되었습니다.', 'success')
       handleClose()
     },
@@ -133,6 +146,7 @@ export function TransactionForm({
       queryClientInstance.invalidateQueries({
         queryKey: ['transactions', defaultYear, defaultMonth],
       })
+      queryClientInstance.invalidateQueries({ queryKey: ['assets'] })
       showToast('거래내역이 수정되었습니다.', 'success')
       handleClose()
     },
@@ -142,7 +156,7 @@ export function TransactionForm({
   const isPending = isCreating || isUpdating
 
   const handleClose = () => {
-    reset({ categoryId: '', amount: '', txnDate: todayString(), memo: '' })
+    reset({ categoryId: '', assetId: '', amount: '', txnDate: todayString(), memo: '' })
     setTxnType('EXPENSE')
     onClose()
   }
@@ -150,6 +164,7 @@ export function TransactionForm({
   const onSubmit = (data: TransactionFormValues) => {
     const payload = {
       categoryId: Number(data.categoryId),
+      assetId: data.assetId ? Number(data.assetId) : undefined,
       amount: parseNumber(data.amount),
       txnDate: data.txnDate,
       memo: data.memo || undefined,
@@ -261,6 +276,27 @@ export function TransactionForm({
               </FormControl>
             )}
           />
+
+          {/* 자산 계좌 (선택사항) */}
+          {assets.length > 0 && (
+            <Controller
+              name="assetId"
+              control={control}
+              render={({ field }) => (
+                <FormControl fullWidth size="small">
+                  <InputLabel>자산 계좌 (선택)</InputLabel>
+                  <Select {...field} label="자산 계좌 (선택)">
+                    <MenuItem value="">없음</MenuItem>
+                    {assets.map((asset) => (
+                      <MenuItem key={asset.id} value={String(asset.id)}>
+                        {asset.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            />
+          )}
 
           {/* 금액 */}
           <Controller

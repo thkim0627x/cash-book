@@ -11,6 +11,7 @@ export interface Asset {
   id: number
   name: string
   initialAmount: number
+  currentBalance: number  // initialAmount + 연결된 거래 합계 (백엔드 자동 계산)
   assetType: AssetType
   createdAt: string
 }
