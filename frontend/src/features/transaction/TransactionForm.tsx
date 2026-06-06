@@ -51,6 +51,8 @@ interface TransactionFormProps {
   onClose: () => void
   defaultYear: number
   defaultMonth: number
+  /** 새 거래 등록 시 기본 유형 */
+  defaultType?: TransactionType
   /** 수정 모드: 기존 거래내역 전달 */
   editTarget?: Transaction | null
 }
@@ -65,6 +67,7 @@ export function TransactionForm({
   onClose,
   defaultYear,
   defaultMonth,
+  defaultType,
   editTarget,
 }: TransactionFormProps) {
   const theme = useTheme()
@@ -74,9 +77,8 @@ export function TransactionForm({
 
   const isEditMode = !!editTarget
 
-  // 수정 모드에서는 type 고정, 등록 모드에서는 EXPENSE 기본
   const [txnType, setTxnType] = useState<TransactionType>(
-    editTarget?.type ?? 'EXPENSE'
+    editTarget?.type ?? defaultType ?? 'EXPENSE'
   )
 
   // editTarget 기반 폼 초기값 (open/editTarget 변경 시 호출부 key로 remount)
