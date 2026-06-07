@@ -279,14 +279,14 @@ export function TransactionForm({
   const transferRows = [
     { key: 'date',      label: '날짜',   value: fmtDate(date),     field: 'date'      as ActiveField },
     { key: 'amount',    label: '금액',   value: displayAmt,         field: 'amount'    as ActiveField, accent: true },
-    { key: 'fromAsset', label: '출금계좌', value: selFrom?.name ?? '', field: 'fromAsset' as ActiveField },
-    { key: 'toAsset',   label: '입금계좌', value: selTo?.name ?? '',   field: 'toAsset'   as ActiveField },
+    { key: 'fromAsset', label: '출금', value: selFrom?.name ?? '', field: 'fromAsset' as ActiveField },
+    { key: 'toAsset',   label: '입금', value: selTo?.name ?? '',   field: 'toAsset'   as ActiveField },
   ]
   const rows = tab === 'TRANSFER' ? transferRows : normalRows
 
   const panelLabel: Record<string, string> = {
     date: '날짜', amount: '금액', category: '분류', asset: '자산',
-    fromAsset: '출금계좌', toAsset: '입금계좌',
+    fromAsset: '출금', toAsset: '입금',
   }
 
   const cardSx = (sel: boolean) => ({
@@ -543,7 +543,7 @@ export function TransactionForm({
             }}
             startIcon={saving ? <CircularProgress size={18} color="inherit" /> : null}
           >
-            {isEdit ? '수정 완료' : tab === 'TRANSFER' ? '이체 저장' : '저장'}
+            {isEdit ? '수정 완료' : '저장'}
           </Button>
         </Box>
 

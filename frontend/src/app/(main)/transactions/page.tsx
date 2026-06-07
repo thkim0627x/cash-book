@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect } from 'react'
 import {
   Box, Card, CardContent, Chip, Typography, Stack, Alert, Skeleton, Avatar, Divider,
   IconButton, Tooltip, Fab, Drawer, Button, InputBase, ToggleButtonGroup,
@@ -479,8 +479,11 @@ export default function TransactionsPage() {
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
-  // 페이지 진입 시 최상단으로
-  useEffect(() => { window.scrollTo(0, 0) }, [])
+  // 페이지 진입 시 최상단으로 — useLayoutEffect로 페인트 전 동기 실행
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+  }, [])
 
   const { data: txnRes, isLoading, isError } = useQuery({
     queryKey: ['transactions', year, month],
