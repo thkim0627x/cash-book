@@ -227,7 +227,9 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
         display: 'flex', alignItems: 'center', gap: 1.5,
         px: { xs: 2, sm: 2.5 }, py: { xs: 0.9, sm: 1 },
         cursor: 'pointer',
-        bgcolor: isSelected ? 'action.selected' : 'transparent',
+        bgcolor: isSelected
+          ? 'action.selected'
+          : txn.type === 'INCOME' ? 'rgba(227,242,253,0.45)' : 'rgba(255,235,238,0.45)',
         transition: 'background-color 0.12s',
         '&:hover': { bgcolor: isSelected ? 'action.selected' : 'action.hover' },
         '&:hover .txn-actions': { opacity: 1 },
@@ -668,6 +670,7 @@ export default function TransactionsPage() {
         anchor="bottom"
         open={mobileDrawerOpen && isMobile}
         onClose={() => setMobileDrawerOpen(false)}
+        sx={{ zIndex: (t) => t.zIndex.drawer + 3 }}
         PaperProps={{
           sx: {
             borderRadius: '16px 16px 0 0',
@@ -675,6 +678,7 @@ export default function TransactionsPage() {
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            pb: 'env(safe-area-inset-bottom)',
           }
         }}
       >
