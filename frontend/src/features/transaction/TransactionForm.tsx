@@ -255,7 +255,6 @@ export function TransactionForm({
   const [date, setDate] = useState(editTarget?.txnDate ?? todayStr())
 
   const [amountOpen, setAmountOpen] = useState(false)
-  const [memoOpen, setMemoOpen] = useState(false)
   const [dateOpen, setDateOpen] = useState(false)
   const [catSheetOpen, setCatSheetOpen] = useState(false)
 
@@ -268,7 +267,7 @@ export function TransactionForm({
         setTab(defaultType ?? 'EXPENSE'); setDigits(''); setCatId(null); setAssetId(null)
         setFromAsset(null); setToAsset(null); setMemo(''); setDate(todayStr())
       }
-      setAmountOpen(false); setMemoOpen(false); setDateOpen(false); setCatSheetOpen(false)
+      setAmountOpen(false); setDateOpen(false); setCatSheetOpen(false)
       const t = isEdit ? editTarget?.type : (defaultType ?? 'EXPENSE')
       if (t === 'INCOME' || t === 'EXPENSE') setRecentCatIds(getRecentCats(t))
       setRecentAssetIds(getRecentAssets())
@@ -459,6 +458,35 @@ export function TransactionForm({
           {/* ── 스크롤 영역 ── */}
           <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 
+            {/* 날짜 카드 */}
+            <Box sx={cardSx}>
+              <Box sx={{ ...cardHeadSx, cursor: 'pointer' }} onClick={() => setDateOpen(v => !v)}>
+                <Stack direction="row" alignItems="center" gap={0.75}>
+                  <CalendarBlank size={14} color={theme.palette.text.secondary} />
+                  <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.82rem' }}>날짜</Typography>
+                </Stack>
+                <Stack direction="row" alignItems="center" gap={0.75}>
+                  <Typography variant="body2" color="text.primary" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
+                    {fmtDate(date)}
+                  </Typography>
+                  {dateOpen
+                    ? <CaretUp size={14} color={theme.palette.text.secondary} />
+                    : <CaretDown size={14} color={theme.palette.text.secondary} />}
+                </Stack>
+              </Box>
+              {dateOpen && (
+                <>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pt: 0.75 }}>
+                    <Button size="small" onClick={() => setDate(todayStr())}
+                      sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.25, minWidth: 0 }}>
+                      오늘
+                    </Button>
+                  </Box>
+                  <DatePicker value={date} onChange={(d) => { setDate(d); setDateOpen(false) }} />
+                </>
+              )}
+            </Box>
+
             {/* 금액 카드 */}
             <Box sx={cardSx}>
               <Box sx={cardHeadSx}>
@@ -595,67 +623,26 @@ export function TransactionForm({
               </Box>
             )}
 
-            {/* 내용 카드 */}
+            {/* 내용 카드 — 항상 표시 */}
             <Box sx={cardSx}>
-              <Box sx={{ ...cardHeadSx, cursor: 'pointer' }} onClick={() => setMemoOpen(v => !v)}>
+              <Box sx={cardHeadSx}>
                 <Stack direction="row" alignItems="center" gap={0.75}>
                   <PencilSimple size={14} color={theme.palette.text.secondary} />
                   <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.82rem' }}>내용</Typography>
                 </Stack>
-                <Stack direction="row" alignItems="center" gap={0.75}>
-                  {!memoOpen && memo && (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', maxWidth: 160 }} noWrap>
-                      {memo}
-                    </Typography>
-                  )}
-                  {memoOpen
-                    ? <CaretUp size={14} color={theme.palette.text.secondary} />
-                    : <CaretDown size={14} color={theme.palette.text.secondary} />}
-                </Stack>
               </Box>
-              {memoOpen && (
-                <Box sx={{ px: 2.5, py: 1.5 }}>
-                  <TextField
-                    fullWidth
-                    placeholder="내용 입력 (선택)"
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                    variant="standard"
-                    inputProps={{ maxLength: 200, style: { fontSize: '16px' } }}
-                    slotProps={{ input: { disableUnderline: true } }}
-                    sx={{ '& .MuiInputBase-input': { py: 0 } }}
-                  />
-                </Box>
-              )}
-            </Box>
-
-            {/* 날짜 카드 */}
-            <Box sx={cardSx}>
-              <Box sx={{ ...cardHeadSx, cursor: 'pointer' }} onClick={() => setDateOpen(v => !v)}>
-                <Stack direction="row" alignItems="center" gap={0.75}>
-                  <CalendarBlank size={14} color={theme.palette.text.secondary} />
-                  <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.82rem' }}>날짜</Typography>
-                </Stack>
-                <Stack direction="row" alignItems="center" gap={0.75}>
-                  <Typography variant="body2" color="text.primary" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
-                    {fmtDate(date)}
-                  </Typography>
-                  {dateOpen
-                    ? <CaretUp size={14} color={theme.palette.text.secondary} />
-                    : <CaretDown size={14} color={theme.palette.text.secondary} />}
-                </Stack>
+              <Box sx={{ px: 2.5, py: 1.5 }}>
+                <TextField
+                  fullWidth
+                  placeholder="내용 입력 (선택)"
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  variant="standard"
+                  inputProps={{ maxLength: 200, style: { fontSize: '16px' } }}
+                  slotProps={{ input: { disableUnderline: true } }}
+                  sx={{ '& .MuiInputBase-input': { py: 0 } }}
+                />
               </Box>
-              {dateOpen && (
-                <>
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pt: 0.75 }}>
-                    <Button size="small" onClick={() => setDate(todayStr())}
-                      sx={{ fontSize: '0.75rem', color: 'text.secondary', py: 0.25, minWidth: 0 }}>
-                      오늘
-                    </Button>
-                  </Box>
-                  <DatePicker value={date} onChange={(d) => setDate(d)} />
-                </>
-              )}
             </Box>
 
           </Box>
