@@ -301,9 +301,8 @@ function DateHeader({ dateKey, txns }: { dateKey: string; txns: Transaction[] })
       sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         px: { xs: 2, sm: 2.5 }, py: 0.75,
-        bgcolor: 'grey.50',
+        bgcolor: 'background.paper',
         borderBottom: '1px solid', borderColor: 'divider',
-        position: 'sticky', top: 0, zIndex: 1,
       }}
     >
       <Stack direction="row" alignItems="center" spacing={0.75}>
@@ -568,7 +567,7 @@ export default function TransactionsPage() {
           {groupedByDate.map(([dateKey, txns]) => (
             <Box
               key={dateKey}
-              sx={{ borderRadius: 1, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}
+              sx={{ borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
             >
               <DateHeader dateKey={dateKey} txns={txns} />
               {txns.map((txn, idx) => (
@@ -663,7 +662,7 @@ export default function TransactionsPage() {
         listContent
       )}
 
-      {/* 모바일 거래 상세 Drawer */}
+      {/* 모바일 액션시트 Drawer */}
       <Drawer
         anchor="bottom"
         open={mobileDrawerOpen && isMobile}
@@ -671,22 +670,60 @@ export default function TransactionsPage() {
         PaperProps={{
           sx: {
             borderRadius: '16px 16px 0 0',
-            maxHeight: '85dvh',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+            pb: 'env(safe-area-inset-bottom)',
           }
         }}
       >
-        <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mt: 1.5, mb: 0, flexShrink: 0 }} />
-        <DetailPanel
-          txn={selectedTxn}
-          onEdit={() => selectedTxn && handleEditClick(selectedTxn)}
-          onDelete={() => { selectedTxn && setDeleteTarget(selectedTxn.id); setMobileDrawerOpen(false) }}
-          onAdd={handleAddClick}
-          onClose={() => setMobileDrawerOpen(false)}
-          isDrawer
-        />
+        {selectedTxn && (
+          <Box sx={{ p: 2.5 }}>
+            {/* 드래그 핸들 */}
+            <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mb: 2.5 }} />
+
+            {/* 거래 요약 */}
+            <Stack direction="row" spacing={1.5} alignItems="center"
+              sx={{ pb: 2, mb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Avatar
+                sx={{
+                  width: 44, height: 44, fontSize: '0.9rem', flexShrink: 0,
+                  ...(selectedTxn.categoryColor
+                    ? { bgcolor: selectedTxn.categoryColor, color: '#fff' }
+                    : selectedTxn.type === 'INCOME'
+                      ? { bgcolor: '#e1f5fe', color: '#0277bd' }
+                      : { bgcolor: '#ffebee', color: '#c62828' }),
+                }}
+              >
+                {selectedTxn.categoryName?.slice(0, 1)}
+              </Avatar>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="subtitle2" fontWeight={700} noWrap>{selectedTxn.categoryName}</Typography>
+                {selectedTxn.memo && (
+                  <Typography variant="caption" color="text.secondary" noWrap display="block">{selectedTxn.memo}</Typography>
+                )}
+                <Typography variant="caption" color="text.secondary">{selectedTxn.txnDate}</Typography>
+              </Box>
+              <Typography
+                variant="subtitle1" fontWeight={800} flexShrink={0}
+                color={selectedTxn.type === 'INCOME' ? 'info.main' : 'error.main'}
+              >
+                {selectedTxn.amount.toLocaleString('ko-KR')}원
+              </Typography>
+            </Stack>
+
+            {/* 액션 버튼 */}
+            <Stack direction="row" spacing={1.5}>
+              <Button
+                fullWidth variant="outlined" size="large"
+                startIcon={<PencilSimple size={18} />}
+                onClick={() => { handleEditClick(selectedTxn); setMobileDrawerOpen(false) }}
+              >수정</Button>
+              <Button
+                fullWidth variant="outlined" size="large" color="error"
+                startIcon={<Trash size={18} />}
+                onClick={() => { setDeleteTarget(selectedTxn.id); setMobileDrawerOpen(false) }}
+              >삭제</Button>
+            </Stack>
+          </Box>
+        )}
       </Drawer>
 
       {/* 모바일 FAB */}
