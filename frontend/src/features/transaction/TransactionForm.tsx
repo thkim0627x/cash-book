@@ -1,36 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
-  Dialog,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  InputAdornment,
-  Button,
-  Stack,
-  useMediaQuery,
-  useTheme,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Typography,
-  Box,
-  Avatar,
-  Divider,
+  Dialog, DialogContent,
+  Button, Stack, useMediaQuery, useTheme, CircularProgress,
+  Typography, Box, Chip, Divider, TextField, IconButton,
 } from '@mui/material'
-import { useForm, Controller } from 'react-hook-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { categoryService } from '@/services/category.service'
 import { assetService } from '@/services/asset.service'
 import { transactionService } from '@/services/transaction.service'
 import { useToastStore } from '@/stores/toastStore'
+import { X } from '@phosphor-icons/react'
 import type { Transaction, TransactionCreateRequest, TransactionUpdateRequest } from '@/types/transaction'
 
 type TxnTabType = 'INCOME' | 'EXPENSE' | 'TRANSFER'
 
-const CATEGORY_EMOJI: Record<string, string> = {
+const EMOJI: Record<string, string> = {
   월급: '💰', 급여: '💰', 부수입: '💵', 용돈: '🎁', 상여: '🏆', 금융소득: '📈',
   식비: '🍔', '교통/차량': '🚗', 교통: '🚗', 문화생활: '🎬', '문화/여가': '🎬',
   '마트/편의점': '🛒', 쇼핑: '🛒', '패션/미용': '👗', 생활용품: '🧴',
@@ -40,91 +25,51 @@ const CATEGORY_EMOJI: Record<string, string> = {
   이체: '🔄', 보험: '🛡️', '적금/투자': '📊',
 }
 
-function getCategoryEmoji(name: string): string {
-  return CATEGORY_EMOJI[name] ?? name.slice(0, 1)
-}
-
-interface NumberPadProps {
-  digits: string
-  onDigits: (d: string) => void
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function NumberPad({ digits, onDigits, onConfirm, onCancel }: NumberPadProps) {
-  const handle = (k: string) => {
-    if (k === '⌫') { onDigits(digits.slice(0, -1)); return }
-    if (k === 'C') { onDigits(''); return }
-    if (digits.length >= 10) return
-    onDigits(digits + k)
-  }
-  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫']
-  const display = Number(digits || '0').toLocaleString('ko-KR')
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ px: 3, py: 2.5, textAlign: 'right', borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="h4" fontWeight={700} component="span">
-          {display}
-        </Typography>
-        <Typography variant="h5" component="span" color="text.secondary" ml={0.5}>
-          원
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', flex: 1 }}>
-        {keys.map((k) => (
-          <Button
-            key={k}
-            variant="text"
-            onClick={() => handle(k)}
-            sx={{
-              py: 2.5,
-              fontSize: '1.4rem',
-              fontWeight: 500,
-              borderRadius: 0,
-              color:
-                k === 'C' ? 'error.main' : k === '⌫' ? 'text.secondary' : 'text.primary',
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            {k}
-          </Button>
-        ))}
-      </Box>
-
-      <Stack direction="row" spacing={1.5} sx={{ p: 2 }}>
-        <Button fullWidth variant="outlined" onClick={onCancel} size="large">
-          취소
-        </Button>
-        <Button
-          fullWidth
-          variant="contained"
-          onClick={onConfirm}
-          size="large"
-          disabled={!digits || Number(digits) < 1}
-        >
-          확인
-        </Button>
-      </Stack>
-    </Box>
-  )
-}
-
-interface FormValues {
-  txnDate: string
-  memo: string
-  assetId: string
-  fromAssetId: string
-  toAssetId: string
-  fee: string
-}
-
-function todayString() {
+function todayStr() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function fmtDate(s: string) {
+  if (s === todayStr()) return '오늘'
+  const d = new Date(s)
+  return `${d.getMonth() + 1}.${String(d.getDate()).padStart(2, '0')}`
+}
+
+// ── 숫자 키패드 ────────────────────────────────────────────────────────────
+function NumKeypad({ digits, onDigits }: { digits: string; onDigits: (d: string) => void }) {
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '⌫'] as const
+  const handle = (k: string) => {
+    if (k === '⌫') { onDigits(digits.slice(0, -1)); return }
+    if (digits.length >= 11) return
+    if (k === '00') { if (!digits || digits === '0') return; onDigits(digits + '00'); return }
+    if (digits === '0') return
+    onDigits(digits + k)
+  }
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      {keys.map((k) => (
+        <Button
+          key={k}
+          variant="text"
+          onClick={() => handle(k)}
+          sx={{
+            py: { xs: 1.6, sm: 1.4 },
+            fontSize: { xs: '1.25rem', sm: '1.15rem' },
+            fontWeight: k === '⌫' ? 400 : 600,
+            borderRadius: 0,
+            color: k === '⌫' ? 'text.secondary' : 'text.primary',
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
+        >
+          {k}
+        </Button>
+      ))}
+    </Box>
+  )
+}
+
+// ── Props ──────────────────────────────────────────────────────────────────
 interface TransactionFormProps {
   open: boolean
   onClose: () => void
@@ -135,559 +80,405 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({
-  open,
-  onClose,
-  defaultYear,
-  defaultMonth,
-  defaultType,
-  editTarget,
+  open, onClose, defaultYear, defaultMonth, defaultType, editTarget,
 }: TransactionFormProps) {
   const theme = useTheme()
-  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const showToast = useToastStore((s) => s.show)
-  const queryClientInstance = useQueryClient()
+  const qc = useQueryClient()
+  const isEdit = !!editTarget
+  const dateRef = useRef<HTMLInputElement>(null)
 
-  const isEditMode = !!editTarget
-
-  const [txnType, setTxnType] = useState<TxnTabType>(
-    isEditMode ? (editTarget.type as TxnTabType) : (defaultType ?? 'EXPENSE')
+  // ── state ──
+  const [tab, setTab] = useState<TxnTabType>(
+    isEdit ? (editTarget.type as TxnTabType) : (defaultType ?? 'EXPENSE')
   )
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    editTarget?.categoryId ?? null
-  )
-  const [amountDigits, setAmountDigits] = useState(
-    editTarget ? String(editTarget.amount) : ''
-  )
-  const [numPadMode, setNumPadMode] = useState(false)
-  const [numPadDigits, setNumPadDigits] = useState('')
+  const [digits, setDigits] = useState(isEdit ? String(editTarget.amount) : '')
+  const [feeDigits, setFeeDigits] = useState('')
+  const [numTarget, setNumTarget] = useState<'amount' | 'fee'>('amount')
+  const [catId, setCatId] = useState<number | null>(editTarget?.categoryId ?? null)
+  const [assetId, setAssetId] = useState(editTarget?.assetId ? String(editTarget.assetId) : '')
+  const [fromAsset, setFromAsset] = useState('')
+  const [toAsset, setToAsset] = useState('')
+  const [memo, setMemo] = useState(editTarget?.memo ?? '')
+  const [date, setDate] = useState(editTarget?.txnDate ?? todayStr())
+  const [showAll, setShowAll] = useState(false)
 
-  const { register, handleSubmit, control, reset, formState: { errors } } =
-    useForm<FormValues>({
-      defaultValues: {
-        txnDate: editTarget?.txnDate ?? todayString(),
-        memo: editTarget?.memo ?? '',
-        assetId: editTarget?.assetId ? String(editTarget.assetId) : '',
-        fromAssetId: '',
-        toAssetId: '',
-        fee: '',
-      },
-    })
+  // reset on open
+  useEffect(() => {
+    if (open && !isEdit) {
+      setTab(defaultType ?? 'EXPENSE')
+      setDigits(''); setFeeDigits('')
+      setNumTarget('amount')
+      setCatId(null); setAssetId('')
+      setFromAsset(''); setToAsset('')
+      setMemo(''); setDate(todayStr())
+      setShowAll(false)
+    }
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Categories
-  const { data: categoriesRes } = useQuery({
-    queryKey: ['categories'],
-    queryFn: categoryService.getAll,
-    staleTime: Infinity,
+  // ── data ──
+  const { data: catRes } = useQuery({ queryKey: ['categories'], queryFn: categoryService.getAll, staleTime: Infinity })
+  const { data: assetRes } = useQuery({ queryKey: ['assets'], queryFn: assetService.getAll, staleTime: Infinity })
+  const allCats = catRes?.data ?? []
+  const assets = assetRes?.data ?? []
+  const typeCats = allCats.filter(c => tab !== 'TRANSFER' && c.type === tab && c.name !== '이체')
+  const visibleCats = showAll ? typeCats : typeCats.slice(0, 6)
+  const xferExpCat = allCats.find(c => c.name === '이체' && c.type === 'EXPENSE') ?? allCats.find(c => c.type === 'EXPENSE')
+  const xferIncCat = allCats.find(c => c.name === '이체' && c.type === 'INCOME') ?? allCats.find(c => c.type === 'INCOME')
+
+  // ── mutations ──
+  const { mutate: create, isPending: creating } = useMutation({
+    mutationFn: (d: TransactionCreateRequest) => transactionService.create(d),
+    onError: () => showToast('등록에 실패했습니다.', 'error'),
   })
-  const allCategories = categoriesRes?.data ?? []
-  const typeCategories = allCategories.filter(
-    (c) => txnType !== 'TRANSFER' && c.type === txnType
-  )
-  const transferExpenseCat =
-    allCategories.find((c) => c.name === '이체' && c.type === 'EXPENSE') ??
-    allCategories.find((c) => c.type === 'EXPENSE')
-  const transferIncomeCat =
-    allCategories.find((c) => c.name === '이체' && c.type === 'INCOME') ??
-    allCategories.find((c) => c.type === 'INCOME')
-
-  // Assets
-  const { data: assetsRes } = useQuery({
-    queryKey: ['assets'],
-    queryFn: assetService.getAll,
-    staleTime: Infinity,
-  })
-  const assets = assetsRes?.data ?? []
-
-  // Create
-  const { mutate: create, isPending: isCreating } = useMutation({
-    mutationFn: (data: TransactionCreateRequest) => transactionService.create(data),
-    onError: () => showToast('거래내역 등록에 실패했습니다.', 'error'),
-  })
-
-  // Update
-  const { mutate: update, isPending: isUpdating } = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: TransactionUpdateRequest }) =>
-      transactionService.update(id, data),
+  const { mutate: update, isPending: updating } = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: TransactionUpdateRequest }) => transactionService.update(id, data),
     onSuccess: () => {
-      queryClientInstance.invalidateQueries({ queryKey: ['transactions', defaultYear, defaultMonth] })
-      showToast('거래내역이 수정되었습니다.', 'success')
-      handleClose()
+      qc.invalidateQueries({ queryKey: ['transactions', defaultYear, defaultMonth] })
+      showToast('수정되었습니다.', 'success')
+      onClose()
     },
-    onError: () => showToast('거래내역 수정에 실패했습니다.', 'error'),
+    onError: () => showToast('수정에 실패했습니다.', 'error'),
   })
+  const saving = creating || updating
 
-  const isPending = isCreating || isUpdating
+  // ── save ──
+  const handleSave = () => {
+    const amount = Number(digits)
+    if (!amount || amount < 1) { showToast('금액을 입력해주세요.', 'warning'); return }
 
-  const handleClose = () => {
-    reset()
-    setTxnType('EXPENSE')
-    setSelectedCategoryId(null)
-    setAmountDigits('')
-    setNumPadMode(false)
-    onClose()
-  }
-
-  const handleTypeChange = (newType: TxnTabType) => {
-    if (isEditMode) return
-    setTxnType(newType)
-    setSelectedCategoryId(null)
-  }
-
-  const openNumPad = () => {
-    setNumPadDigits(amountDigits)
-    setNumPadMode(true)
-  }
-
-  const onSubmit = (data: FormValues) => {
-    const amount = Number(amountDigits)
-
-    if (!amount || amount < 1) {
-      showToast('금액을 입력해주세요.', 'warning')
+    if (tab === 'TRANSFER') {
+      if (!xferExpCat || !xferIncCat) { showToast('이체 카테고리가 없습니다.', 'error'); return }
+      const fee = Number(feeDigits || '0')
+      const m = memo || '이체'
+      create({ type: 'EXPENSE', categoryId: xferExpCat.id, amount: amount + fee, txnDate: date, memo: m }, {
+        onSuccess: () => create(
+          { type: 'INCOME', categoryId: xferIncCat.id, amount, txnDate: date, memo: m },
+          {
+            onSuccess: () => {
+              qc.invalidateQueries({ queryKey: ['transactions', defaultYear, defaultMonth] })
+              showToast('이체가 등록되었습니다.', 'success')
+              onClose()
+            },
+          }
+        ),
+      })
       return
     }
 
-    if (txnType === 'TRANSFER') {
-      if (!transferExpenseCat || !transferIncomeCat) {
-        showToast('이체 카테고리가 없습니다. 카테고리 설정을 확인해주세요.', 'error')
-        return
-      }
-      const fee = Number(data.fee.replace(/[^0-9]/g, '') || '0')
-      const memo = data.memo || '이체'
+    if (!catId) { showToast('분류를 선택해주세요.', 'warning'); return }
+    const payload = { categoryId: catId, amount, txnDate: date, memo: memo || undefined, assetId: assetId ? Number(assetId) : undefined }
 
-      create(
-        {
-          type: 'EXPENSE',
-          categoryId: transferExpenseCat.id,
-          amount: amount + fee,
-          txnDate: data.txnDate,
-          memo,
-        },
-        {
-          onSuccess: () => {
-            create(
-              {
-                type: 'INCOME',
-                categoryId: transferIncomeCat.id,
-                amount,
-                txnDate: data.txnDate,
-                memo,
-              },
-              {
-                onSuccess: () => {
-                  queryClientInstance.invalidateQueries({
-                    queryKey: ['transactions', defaultYear, defaultMonth],
-                  })
-                  showToast('이체가 등록되었습니다.', 'success')
-                  handleClose()
-                },
-              }
-            )
-          },
-        }
-      )
-      return
-    }
-
-    if (!selectedCategoryId) {
-      showToast('분류를 선택해주세요.', 'warning')
-      return
-    }
-
-    const payload = {
-      categoryId: selectedCategoryId,
-      amount,
-      txnDate: data.txnDate,
-      memo: data.memo || undefined,
-    }
-
-    if (isEditMode && editTarget) {
+    if (isEdit && editTarget) {
       update({ id: editTarget.id, data: { type: editTarget.type, ...payload } })
     } else {
-      create(
-        { type: txnType as 'INCOME' | 'EXPENSE', ...payload },
-        {
-          onSuccess: () => {
-            queryClientInstance.invalidateQueries({
-              queryKey: ['transactions', defaultYear, defaultMonth],
-            })
-            showToast('거래내역이 등록되었습니다.', 'success')
-            handleClose()
-          },
-        }
-      )
+      create({ type: tab as 'INCOME' | 'EXPENSE', ...payload }, {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ['transactions', defaultYear, defaultMonth] })
+          showToast('등록되었습니다.', 'success')
+          onClose()
+        },
+      })
     }
   }
 
-  const tabColors: Record<TxnTabType, string> = {
-    INCOME: theme.palette.info.main,
-    EXPENSE: theme.palette.error.main,
-    TRANSFER: theme.palette.text.secondary,
-  }
-  const tabLabels: Record<TxnTabType, string> = {
-    INCOME: '수입',
-    EXPENSE: '지출',
-    TRANSFER: '이체',
-  }
+  // ── colors ──
+  const tabColor = { INCOME: theme.palette.info.main, EXPENSE: theme.palette.error.main, TRANSFER: theme.palette.text.primary }
+  const amtColor = tab === 'INCOME' ? 'info.main' : tab === 'EXPENSE' ? 'error.main' : 'text.primary'
 
-  const selectedBg =
-    txnType === 'INCOME' ? 'rgba(2,136,209,0.10)' : 'rgba(211,47,47,0.10)'
-  const selectedBorder = tabColors[txnType === 'TRANSFER' ? 'EXPENSE' : txnType]
+  const activeDigits = numTarget === 'amount' ? digits : feeDigits
+  const setActiveDigits = (d: string) => numTarget === 'amount' ? setDigits(d) : setFeeDigits(d)
+  const displayAmt = Number(digits || '0').toLocaleString('ko-KR')
+  const displayFee = Number(feeDigits || '0').toLocaleString('ko-KR')
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       maxWidth="sm"
       fullWidth
-      fullScreen={fullScreen}
+      fullScreen={isMobile}
       PaperProps={{
-        sx: fullScreen
-          ? { m: 0, height: '100dvh', maxHeight: '100dvh', borderRadius: 0 }
-          : {},
-      }}
-    >
-      <DialogContent
-        sx={{
-          p: 0,
+        sx: {
+          m: isMobile ? 0 : undefined,
+          height: isMobile ? '100dvh' : '92vh',
+          maxHeight: isMobile ? '100dvh' : '92vh',
+          borderRadius: isMobile ? 0 : 2,
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
-          height: fullScreen ? '100%' : undefined,
-        }}
-      >
-        {numPadMode ? (
-          /* ── Number pad mode ── */
-          <NumberPad
-            digits={numPadDigits}
-            onDigits={setNumPadDigits}
-            onConfirm={() => {
-              setAmountDigits(numPadDigits)
-              setNumPadMode(false)
+        },
+      }}
+    >
+      <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+        {/* ── 탭 + 닫기 ── */}
+        <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
+          {(['INCOME', 'EXPENSE', 'TRANSFER'] as TxnTabType[]).map((t) => {
+            const sel = tab === t
+            const labels = { INCOME: '수입', EXPENSE: '지출', TRANSFER: '이체' }
+            return (
+              <Button
+                key={t}
+                onClick={() => { if (!isEdit) { setTab(t); setCatId(null); setShowAll(false); setNumTarget('amount') } }}
+                disabled={isEdit && t !== tab}
+                sx={{
+                  flex: 1, py: 1.4, borderRadius: 0, fontWeight: 700, fontSize: '0.88rem',
+                  color: sel ? tabColor[t] : 'text.secondary',
+                  borderBottom: sel ? `3px solid ${tabColor[t]}` : '3px solid transparent',
+                  '&:hover': { bgcolor: 'action.hover' },
+                  '&.Mui-disabled': { opacity: 0.3 },
+                }}
+              >
+                {labels[t]}
+              </Button>
+            )
+          })}
+          <IconButton size="small" onClick={onClose} sx={{ mr: 1, flexShrink: 0 }}>
+            <X size={18} />
+          </IconButton>
+        </Box>
+
+        {/* ── 금액 표시 ── */}
+        <Box
+          sx={{
+            flexShrink: 0, textAlign: 'center',
+            px: 3, pt: 2, pb: 1.5,
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'inline-flex', alignItems: 'baseline', gap: 0.5,
+              cursor: tab === 'TRANSFER' ? 'pointer' : 'default',
+              opacity: tab === 'TRANSFER' && numTarget !== 'amount' ? 0.4 : 1,
             }}
-            onCancel={() => setNumPadMode(false)}
-          />
-        ) : (
-          <>
-            {/* Type tabs */}
-            <Box
-              sx={{
-                display: 'flex',
-                borderBottom: 1,
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
-              }}
+            onClick={() => tab === 'TRANSFER' && setNumTarget('amount')}
+          >
+            <Typography
+              fontWeight={800} color={amtColor}
+              sx={{ fontSize: { xs: '2.4rem', sm: '2.6rem' }, lineHeight: 1 }}
             >
-              {(['INCOME', 'EXPENSE', 'TRANSFER'] as TxnTabType[]).map((type) => {
-                const isSelected = txnType === type
-                const isDisabled = isEditMode && type !== txnType
-                return (
-                  <Button
-                    key={type}
-                    fullWidth
-                    onClick={() => handleTypeChange(type)}
-                    disabled={isDisabled}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 0,
-                      fontWeight: 700,
-                      fontSize: '0.9rem',
-                      color: isSelected ? tabColors[type] : 'text.secondary',
-                      borderBottom: isSelected
-                        ? `3px solid ${tabColors[type]}`
-                        : '3px solid transparent',
-                      '&:hover': { bgcolor: 'action.hover' },
-                      '&.Mui-disabled': { opacity: 0.35 },
-                    }}
-                  >
-                    {tabLabels[type]}
-                  </Button>
-                )
-              })}
+              {displayAmt}
+            </Typography>
+            <Typography variant="h6" color="text.secondary" fontWeight={400}>원</Typography>
+          </Box>
+
+          {/* TRANSFER: 수수료 토글 */}
+          {tab === 'TRANSFER' && (
+            <Box sx={{ mt: 0.75 }}>
+              <Chip
+                label={`수수료 ${displayFee}원`}
+                size="small"
+                onClick={() => setNumTarget(numTarget === 'fee' ? 'amount' : 'fee')}
+                variant={numTarget === 'fee' ? 'filled' : 'outlined'}
+                color={numTarget === 'fee' ? 'warning' : 'default'}
+                sx={{ fontSize: '0.75rem', height: 26, cursor: 'pointer' }}
+              />
             </Box>
+          )}
+        </Box>
 
-            {/* Form content */}
-            <Box sx={{ flex: 1, overflowY: 'auto', p: 2.5 }}>
-              {txnType !== 'TRANSFER' ? (
-                <Stack spacing={2.5}>
-                  {/* Category grid */}
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={600}
-                      mb={1}
-                      display="block"
-                    >
-                      분류
-                    </Typography>
-                    {typeCategories.length === 0 ? (
-                      <Typography variant="body2" color="text.disabled">
-                        카테고리가 없습니다.
-                      </Typography>
-                    ) : (
-                      <Box
+        <Divider />
+
+        {/* ── 스크롤 영역 ── */}
+        <Box sx={{ flex: 1, overflowY: 'auto', px: 2, pt: 1.5, pb: 1 }}>
+
+          {tab !== 'TRANSFER' ? (
+            <Stack spacing={2}>
+              {/* 분류 */}
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.75}>
+                  분류
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 0.75 }}>
+                  {visibleCats.map((cat) => {
+                    const sel = catId === cat.id
+                    return (
+                      <Chip
+                        key={cat.id}
+                        label={`${EMOJI[cat.name] ?? ''} ${cat.name}`}
+                        onClick={() => setCatId(cat.id)}
+                        variant={sel ? 'filled' : 'outlined'}
                         sx={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(4, 1fr)',
-                          gap: 1,
-                        }}
-                      >
-                        {typeCategories.map((cat) => {
-                          const isSelected = selectedCategoryId === cat.id
-                          return (
-                            <Box
-                              key={cat.id}
-                              onClick={() => setSelectedCategoryId(cat.id)}
-                              sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                py: 1.5,
-                                px: 0.5,
-                                borderRadius: 2,
-                                cursor: 'pointer',
-                                bgcolor: isSelected ? selectedBg : 'grey.50',
-                                border: '2px solid',
-                                borderColor: isSelected ? selectedBorder : 'transparent',
-                                transition: 'all 0.12s',
-                                '&:hover': { bgcolor: isSelected ? selectedBg : 'action.hover' },
-                              }}
-                            >
-                              <Avatar
-                                sx={{
-                                  width: 36,
-                                  height: 36,
-                                  mb: 0.5,
-                                  bgcolor: cat.color ?? '#e0e0e0',
-                                  fontSize: '1rem',
-                                }}
-                              >
-                                {getCategoryEmoji(cat.name)}
-                              </Avatar>
-                              <Typography
-                                variant="caption"
-                                fontWeight={isSelected ? 700 : 400}
-                                color={isSelected ? selectedBorder : 'text.secondary'}
-                                textAlign="center"
-                                sx={{ lineHeight: 1.2, wordBreak: 'keep-all', fontSize: '0.68rem' }}
-                              >
-                                {cat.name}
-                              </Typography>
-                            </Box>
-                          )
-                        })}
-                      </Box>
-                    )}
-                  </Box>
-
-                  <Divider />
-
-                  {/* Date */}
-                  <TextField
-                    label="날짜"
-                    type="date"
-                    fullWidth
-                    size="small"
-                    InputLabelProps={{ shrink: true }}
-                    error={!!errors.txnDate}
-                    helperText={errors.txnDate?.message}
-                    {...register('txnDate', { required: '날짜를 선택해주세요.' })}
-                  />
-
-                  {/* Amount */}
-                  <TextField
-                    label="금액"
-                    fullWidth
-                    size="small"
-                    value={
-                      amountDigits ? Number(amountDigits).toLocaleString('ko-KR') : ''
-                    }
-                    placeholder="0"
-                    inputProps={isMobile ? { readOnly: true } : undefined}
-                    inputMode={isMobile ? undefined : 'numeric'}
-                    onClick={isMobile ? openNumPad : undefined}
-                    onChange={
-                      isMobile
-                        ? undefined
-                        : (e) => {
-                            const digits = e.target.value.replace(/[^0-9]/g, '')
-                            setAmountDigits(digits.slice(0, 10))
-                          }
-                    }
-                    InputProps={{
-                      endAdornment: <InputAdornment position="end">원</InputAdornment>,
-                    }}
-                    sx={isMobile ? { cursor: 'pointer', '& input': { cursor: 'pointer' } } : {}}
-                  />
-
-                  {/* Asset */}
-                  <Controller
-                    name="assetId"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControl fullWidth size="small">
-                        <InputLabel>자산</InputLabel>
-                        <Select {...field} label="자산">
-                          <MenuItem value="">선택 안 함</MenuItem>
-                          {assets.map((a) => (
-                            <MenuItem key={a.id} value={String(a.id)}>
-                              {a.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  />
-
-                  {/* Memo */}
-                  <TextField
-                    label="내용"
-                    placeholder="거래 내용을 입력해주세요"
-                    fullWidth
-                    size="small"
-                    error={!!errors.memo}
-                    helperText={errors.memo?.message}
-                    {...register('memo', {
-                      maxLength: { value: 100, message: '내용은 100자 이하여야 합니다.' },
-                    })}
-                  />
-                </Stack>
-              ) : (
-                /* TRANSFER form */
-                <Stack spacing={2.5}>
-                  {/* Amount */}
-                  <TextField
-                    label="금액"
-                    fullWidth
-                    size="small"
-                    value={
-                      amountDigits ? Number(amountDigits).toLocaleString('ko-KR') : ''
-                    }
-                    placeholder="0"
-                    inputProps={isMobile ? { readOnly: true } : undefined}
-                    inputMode={isMobile ? undefined : 'numeric'}
-                    onClick={isMobile ? openNumPad : undefined}
-                    onChange={
-                      isMobile
-                        ? undefined
-                        : (e) => {
-                            const digits = e.target.value.replace(/[^0-9]/g, '')
-                            setAmountDigits(digits.slice(0, 10))
-                          }
-                    }
-                    InputProps={{
-                      endAdornment: <InputAdornment position="end">원</InputAdornment>,
-                    }}
-                    sx={isMobile ? { cursor: 'pointer', '& input': { cursor: 'pointer' } } : {}}
-                  />
-
-                  {/* Fee */}
-                  <Controller
-                    name="fee"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        label="수수료"
-                        fullWidth
-                        size="small"
-                        value={field.value}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/[^0-9]/g, '')
-                          field.onChange(
-                            digits ? Number(digits).toLocaleString('ko-KR') : ''
-                          )
-                        }}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">원</InputAdornment>,
+                          justifyContent: 'flex-start',
+                          height: 42, fontSize: '0.83rem',
+                          fontWeight: sel ? 700 : 400,
+                          bgcolor: sel
+                            ? tab === 'INCOME' ? 'rgba(2,136,209,0.12)' : 'rgba(211,47,47,0.10)'
+                            : undefined,
+                          borderColor: sel ? tabColor[tab] : 'divider',
+                          color: sel ? tabColor[tab] : 'text.primary',
+                          '& .MuiChip-label': { px: 1.5 },
                         }}
                       />
-                    )}
-                  />
+                    )
+                  })}
+                  {typeCats.length > 6 && (
+                    <Chip
+                      label={showAll ? '접기 ▲' : `+${typeCats.length - 6}개 더보기`}
+                      onClick={() => setShowAll((v) => !v)}
+                      variant="outlined"
+                      sx={{ height: 42, fontSize: '0.78rem', color: 'text.secondary', borderColor: 'divider' }}
+                    />
+                  )}
+                </Box>
+              </Box>
 
-                  <Divider />
-
-                  {/* From Asset */}
-                  <Controller
-                    name="fromAssetId"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControl fullWidth size="small">
-                        <InputLabel>출금</InputLabel>
-                        <Select {...field} label="출금">
-                          <MenuItem value="">선택 안 함</MenuItem>
-                          {assets.map((a) => (
-                            <MenuItem key={a.id} value={String(a.id)}>
-                              {a.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  />
-
-                  {/* To Asset */}
-                  <Controller
-                    name="toAssetId"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControl fullWidth size="small">
-                        <InputLabel>입금</InputLabel>
-                        <Select {...field} label="입금">
-                          <MenuItem value="">선택 안 함</MenuItem>
-                          {assets.map((a) => (
-                            <MenuItem key={a.id} value={String(a.id)}>
-                              {a.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  />
-
-                  {/* Date */}
-                  <TextField
-                    label="날짜"
-                    type="date"
-                    fullWidth
-                    size="small"
-                    InputLabelProps={{ shrink: true }}
-                    error={!!errors.txnDate}
-                    helperText={errors.txnDate?.message}
-                    {...register('txnDate', { required: '날짜를 선택해주세요.' })}
-                  />
-
-                  {/* Memo */}
-                  <TextField
-                    label="내용"
-                    placeholder="이체 내용을 입력해주세요"
-                    fullWidth
-                    size="small"
-                    {...register('memo')}
-                  />
-                </Stack>
+              {/* 결제수단 */}
+              {assets.length > 0 && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.75}>
+                    결제수단
+                  </Typography>
+                  <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+                    <Chip
+                      label="없음" size="small"
+                      onClick={() => setAssetId('')}
+                      variant={!assetId ? 'filled' : 'outlined'}
+                      sx={{ height: 30, fontSize: '0.76rem', color: 'text.secondary' }}
+                    />
+                    {assets.map((a) => (
+                      <Chip
+                        key={a.id} label={a.name} size="small"
+                        onClick={() => setAssetId(assetId === String(a.id) ? '' : String(a.id))}
+                        variant={assetId === String(a.id) ? 'filled' : 'outlined'}
+                        sx={{
+                          height: 30, fontSize: '0.76rem',
+                          bgcolor: assetId === String(a.id) ? 'primary.main' : undefined,
+                          color: assetId === String(a.id) ? 'primary.contrastText' : 'text.primary',
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
               )}
-            </Box>
-          </>
-        )}
-      </DialogContent>
 
-      {!numPadMode && (
-        <DialogActions sx={{ px: 2.5, py: 2, gap: 1.5, borderTop: 1, borderColor: 'divider' }}>
-          <Button variant="outlined" onClick={handleClose} disabled={isPending} fullWidth>
-            취소
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit(onSubmit)}
-            disabled={isPending}
-            fullWidth
-            startIcon={isPending ? <CircularProgress size={16} color="inherit" /> : null}
-          >
-            {isEditMode ? '수정' : '저장'}
-          </Button>
-        </DialogActions>
-      )}
+              {/* 메모 + 날짜 */}
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <TextField
+                  placeholder="메모 (선택)"
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  inputProps={{ maxLength: 100 }}
+                  sx={{ flex: 1, '& .MuiInputBase-input': { fontSize: '0.85rem', py: 0.8 } }}
+                />
+                <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                  <Chip
+                    label={fmtDate(date)}
+                    size="small"
+                    onClick={() => dateRef.current?.click()}
+                    sx={{ height: 32, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                  />
+                  <input
+                    ref={dateRef}
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    style={{ position: 'absolute', opacity: 0, width: 1, height: 1, top: 0, left: 0, pointerEvents: 'none' }}
+                  />
+                </Box>
+              </Stack>
+            </Stack>
+          ) : (
+            /* ── 이체 폼 ── */
+            <Stack spacing={2}>
+              {/* 출금 */}
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.75}>출금 계좌</Typography>
+                {assets.length === 0
+                  ? <Typography variant="caption" color="text.disabled">자산을 먼저 등록해주세요</Typography>
+                  : (
+                    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+                      {assets.map((a) => (
+                        <Chip key={a.id} label={a.name} size="small"
+                          onClick={() => setFromAsset(fromAsset === String(a.id) ? '' : String(a.id))}
+                          variant={fromAsset === String(a.id) ? 'filled' : 'outlined'}
+                          sx={{ height: 30, fontSize: '0.76rem', bgcolor: fromAsset === String(a.id) ? 'error.main' : undefined, color: fromAsset === String(a.id) ? '#fff' : 'text.primary' }}
+                        />
+                      ))}
+                    </Stack>
+                  )
+                }
+              </Box>
+
+              {/* 입금 */}
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.75}>입금 계좌</Typography>
+                {assets.length === 0
+                  ? <Typography variant="caption" color="text.disabled">자산을 먼저 등록해주세요</Typography>
+                  : (
+                    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+                      {assets.map((a) => (
+                        <Chip key={a.id} label={a.name} size="small"
+                          onClick={() => setToAsset(toAsset === String(a.id) ? '' : String(a.id))}
+                          variant={toAsset === String(a.id) ? 'filled' : 'outlined'}
+                          sx={{ height: 30, fontSize: '0.76rem', bgcolor: toAsset === String(a.id) ? 'success.main' : undefined, color: toAsset === String(a.id) ? '#fff' : 'text.primary' }}
+                        />
+                      ))}
+                    </Stack>
+                  )
+                }
+              </Box>
+
+              {/* 메모 + 날짜 */}
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <TextField
+                  placeholder="메모 (선택)"
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ flex: 1, '& .MuiInputBase-input': { fontSize: '0.85rem', py: 0.8 } }}
+                />
+                <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                  <Chip
+                    label={fmtDate(date)}
+                    size="small"
+                    onClick={() => dateRef.current?.click()}
+                    sx={{ height: 32, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                  />
+                  <input
+                    ref={dateRef}
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    style={{ position: 'absolute', opacity: 0, width: 1, height: 1, top: 0, left: 0, pointerEvents: 'none' }}
+                  />
+                </Box>
+              </Stack>
+            </Stack>
+          )}
+        </Box>
+
+        {/* ── 키패드 + 저장 (하단 고정) ── */}
+        <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <NumKeypad digits={activeDigits} onDigits={setActiveDigits} />
+
+          <Box sx={{ px: 2, pt: 0.75, pb: isMobile ? 'max(env(safe-area-inset-bottom), 12px)' : 1.5 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              onClick={handleSave}
+              disabled={saving}
+              sx={{
+                py: 1.5, fontSize: '1rem', fontWeight: 700, borderRadius: 2,
+                bgcolor: tab === 'INCOME' ? 'info.main' : tab === 'EXPENSE' ? 'error.main' : 'primary.main',
+                '&:hover': {
+                  bgcolor: tab === 'INCOME' ? 'info.dark' : tab === 'EXPENSE' ? 'error.dark' : 'primary.dark',
+                },
+              }}
+              startIcon={saving ? <CircularProgress size={18} color="inherit" /> : null}
+            >
+              {isEdit ? '수정 완료' : tab === 'TRANSFER' ? '이체 저장' : '거래 저장'}
+            </Button>
+          </Box>
+        </Box>
+
+      </DialogContent>
     </Dialog>
   )
 }
