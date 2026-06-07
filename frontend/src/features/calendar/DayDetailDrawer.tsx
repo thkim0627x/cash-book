@@ -32,6 +32,7 @@ export function DayDetailDrawer({ open, onClose, dateKey, transactions }: DayDet
       anchor="bottom"
       open={open}
       onClose={onClose}
+      sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
       PaperProps={{
         sx: {
           borderRadius: '16px 16px 0 0',

@@ -667,6 +667,7 @@ export default function TransactionsPage() {
         anchor="bottom"
         open={mobileDrawerOpen && isMobile}
         onClose={() => setMobileDrawerOpen(false)}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
         PaperProps={{
           sx: {
             borderRadius: '16px 16px 0 0',
