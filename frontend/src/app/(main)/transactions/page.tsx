@@ -60,7 +60,7 @@ function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onN
   const cards = [
     { label: '수입', value: summary.totalIncome,       color: 'info.main',    prefix: '' },
     { label: '지출', value: summary.totalExpense,      color: 'error.main',   prefix: '' },
-    { label: '잔액', value: Math.abs(summary.balance), color: summary.balance >= 0 ? 'success.main' : 'error.main', prefix: summary.balance < 0 ? '-' : '' },
+    { label: '합계', value: Math.abs(summary.balance), color: summary.balance >= 0 ? 'success.main' : 'error.main', prefix: summary.balance < 0 ? '-' : '' },
   ]
 
   return (

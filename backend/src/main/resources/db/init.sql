@@ -47,6 +47,48 @@ ALTER TABLE categories   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NUL
 ALTER TABLE categories   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
 -- ============================================================
+-- 기본 카테고리 이름 업데이트 (idempotent — 여러 번 실행 안전)
+-- ============================================================
+UPDATE categories SET name = '월급',       sort_order = 1  WHERE name = '급여'       AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+UPDATE categories SET name = '기타',       sort_order = 6  WHERE name = '기타수입'   AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+UPDATE categories SET name = '교통/차량',  sort_order = 2  WHERE name = '교통'       AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+UPDATE categories SET name = '문화생활',   sort_order = 3  WHERE name = '문화/여가'  AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+UPDATE categories SET name = '마트/편의점', sort_order = 4 WHERE name = '쇼핑'       AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+UPDATE categories SET name = '주거/통신',  sort_order = 7  WHERE name = '주거'       AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+UPDATE categories SET name = '건강',       sort_order = 8  WHERE name = '의료/건강'  AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+UPDATE categories SET name = '기타',       sort_order = 12 WHERE name = '기타지출'   AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL;
+
+-- 신규 기본 카테고리 추가 (없는 경우에만)
+INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+SELECT NULL, '상여', 'INCOME', 'Medal', '#FF9800', TRUE, 4
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = '상여' AND type = 'INCOME' AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL);
+
+INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+SELECT NULL, '패션/미용', 'EXPENSE', 'TShirt', '#EC407A', TRUE, 5
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = '패션/미용' AND type = 'EXPENSE' AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL);
+
+INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+SELECT NULL, '생활용품', 'EXPENSE', 'Package', '#66BB6A', TRUE, 6
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = '생활용품' AND type = 'EXPENSE' AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL);
+
+INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+SELECT NULL, '경조사/회비', 'EXPENSE', 'Confetti', '#AB47BC', TRUE, 10
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = '경조사/회비' AND type = 'EXPENSE' AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL);
+
+INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+SELECT NULL, '부모님', 'EXPENSE', 'Users', '#795548', TRUE, 11
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = '부모님' AND type = 'EXPENSE' AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL);
+
+-- 이체 전용 카테고리 (이체 탭 거래 저장용)
+INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+SELECT NULL, '이체', 'EXPENSE', 'ArrowsLeftRight', '#607D8B', TRUE, 99
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = '이체' AND type = 'EXPENSE' AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL);
+
+INSERT INTO categories (user_id, name, type, icon, color, is_default, sort_order)
+SELECT NULL, '이체', 'INCOME', 'ArrowsLeftRight', '#607D8B', TRUE, 99
+WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = '이체' AND type = 'INCOME' AND is_default = TRUE AND user_id IS NULL AND deleted_at IS NULL);
+
+-- ============================================================
 -- benefits 테이블 컬럼 추가 (idempotent — 여러 번 실행 안전)
 -- ============================================================
 ALTER TABLE benefits ADD COLUMN IF NOT EXISTS external_id    VARCHAR(100);
