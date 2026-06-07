@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Box, Card, CardContent, Chip, Typography, Stack, Alert, Skeleton, Avatar, Divider,
   IconButton, Tooltip, Fab, Drawer, Button, InputBase, ToggleButtonGroup,
@@ -166,30 +166,33 @@ function FilterBar({
             {totalCount}건
           </Typography>
 
-          {searchOpen ? (
-            <Paper sx={{
-              display: 'flex', alignItems: 'center', px: 1, height: 30,
-              border: '1px solid', borderColor: 'primary.main', borderRadius: 1.5, boxShadow: 'none',
-            }}>
-              <MagnifyingGlass size={13} style={{ flexShrink: 0, color: '#999' }} />
-              <InputBase
-                autoFocus
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="검색..."
-                sx={{ ml: 0.75, fontSize: '0.78rem', width: 90 }}
-              />
-              <IconButton size="small" sx={{ p: 0.25 }} onClick={() => { onSearchChange(''); setSearchOpen(false) }}>
-                <X size={11} />
-              </IconButton>
-            </Paper>
-          ) : (
-            <Tooltip title="검색">
-              <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ p: 0.5 }}>
-                <MagnifyingGlass size={15} />
-              </IconButton>
-            </Tooltip>
-          )}
+          {/* 데스크톱 전용 검색 — 모바일은 FAB으로 대체 */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+            {searchOpen ? (
+              <Paper sx={{
+                display: 'flex', alignItems: 'center', px: 1, height: 30,
+                border: '1px solid', borderColor: 'primary.main', borderRadius: 1.5, boxShadow: 'none',
+              }}>
+                <MagnifyingGlass size={13} style={{ flexShrink: 0, color: '#999' }} />
+                <InputBase
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  placeholder="검색..."
+                  sx={{ ml: 0.75, fontSize: '0.78rem', width: 90 }}
+                />
+                <IconButton size="small" sx={{ p: 0.25 }} onClick={() => { onSearchChange(''); setSearchOpen(false) }}>
+                  <X size={11} />
+                </IconButton>
+              </Paper>
+            ) : (
+              <Tooltip title="검색">
+                <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ p: 0.5 }}>
+                  <MagnifyingGlass size={15} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
 
           <Tooltip title="엑셀 다운로드">
             <span>
@@ -466,6 +469,7 @@ export default function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
   const [calSelectedDate, setCalSelectedDate] = useState<string | null>(null)
   const [calDrawerOpen, setCalDrawerOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
 
   const showToast = useToastStore((s) => s.show)
   const queryClientInstance = useQueryClient()
@@ -474,6 +478,9 @@ export default function TransactionsPage() {
   const isTabletUp = useMediaQuery(theme.breakpoints.up('md'))      // ≥ 900px
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+
+  // 페이지 진입 시 최상단으로
+  useEffect(() => { window.scrollTo(0, 0) }, [])
 
   const { data: txnRes, isLoading, isError } = useQuery({
     queryKey: ['transactions', year, month],
@@ -518,11 +525,11 @@ export default function TransactionsPage() {
 
   const prevMonth = () => {
     if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1)
-    setSelectedTxn(null)
+    setSelectedTxn(null); window.scrollTo(0, 0)
   }
   const nextMonth = () => {
     if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1)
-    setSelectedTxn(null)
+    setSelectedTxn(null); window.scrollTo(0, 0)
   }
 
   const handleTypeChange = (v: 'ALL' | TransactionType) => { setTypeFilter(v) }
@@ -611,6 +618,28 @@ export default function TransactionsPage() {
         onPrev={prevMonth} onNext={nextMonth}
       />
 
+      {/* ── 모바일 검색 바 (FAB 클릭 시 표시) ── */}
+      {isMobile && mobileSearchOpen && (
+        <Paper elevation={0} sx={{
+          display: 'flex', alignItems: 'center',
+          px: 1.5, py: 0.5, mb: 1.5,
+          border: '1px solid', borderColor: 'primary.main',
+          borderRadius: 2,
+        }}>
+          <MagnifyingGlass size={18} color="#999" style={{ flexShrink: 0 }} />
+          <InputBase
+            autoFocus
+            placeholder="카테고리, 내용 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ flex: 1, mx: 1, '& input': { fontSize: '16px' } }}
+          />
+          <IconButton size="small" onClick={() => { setMobileSearchOpen(false); setSearchQuery('') }}>
+            <X size={16} />
+          </IconButton>
+        </Paper>
+      )}
+
       {/* ── 필터 바 ── */}
       <FilterBar
         typeFilter={typeFilter}
@@ -686,11 +715,27 @@ export default function TransactionsPage() {
         />
       </Drawer>
 
-      {/* 모바일 FAB */}
+      {/* 모바일 FAB — 검색(왼쪽) + 추가(오른쪽) */}
       {isMobile && (
-        <Fab color="primary" onClick={handleAddClick} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
-          <Plus weight="bold" size={24} />
-        </Fab>
+        <>
+          {/* 검색 FAB */}
+          <Fab
+            onClick={() => setMobileSearchOpen(v => !v)}
+            sx={{
+              position: 'fixed', bottom: 80, right: 84, zIndex: 10,
+              bgcolor: mobileSearchOpen ? 'primary.main' : 'background.paper',
+              color: mobileSearchOpen ? '#fff' : 'text.secondary',
+              boxShadow: 2,
+              '&:hover': { bgcolor: mobileSearchOpen ? 'primary.dark' : 'grey.100' },
+            }}
+          >
+            <MagnifyingGlass size={22} />
+          </Fab>
+          {/* 추가 FAB */}
+          <Fab color="primary" onClick={handleAddClick} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
+            <Plus weight="bold" size={24} />
+          </Fab>
+        </>
       )}
 
       <TransactionForm
