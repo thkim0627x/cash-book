@@ -39,7 +39,9 @@ ALTER TABLE transactions ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS asset_id   BIGINT REFERENCES assets(id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_transactions_asset_id ON transactions (asset_id) WHERE asset_id IS NOT NULL;
+-- 월별 조회 + 전체기간 합계 핵심 인덱스
+CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, txn_date) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_transactions_asset_id  ON transactions(asset_id) WHERE asset_id IS NOT NULL;
 ALTER TABLE categories   ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 ALTER TABLE categories   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE categories   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();

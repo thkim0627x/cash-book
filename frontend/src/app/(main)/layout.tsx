@@ -18,29 +18,21 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       router.replace('/login')
       return
     }
-    // 토큰은 있으나 user 미적재(새로고침/직접진입) 시 me() 로드
-    if (!user) {
-      authService
-        .me()
-        .then((res) => {
-          if (res.success) setUser(res.data)
-        })
-        .catch(() => {
-          clearAuth()
-          router.replace('/login')
-        })
-    }
-  }, [router, user, setUser, clearAuth])
+    // sessionStorage에 user가 이미 있으면 API 호출 생략
+    if (user) return
+
+    authService
+      .me()
+      .then((res) => { if (res.success) setUser(res.data) })
+      .catch(() => { clearAuth(); router.replace('/login') })
+    // user만 의존 — router/setUser/clearAuth는 안정적 참조
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* 상단 고정 헤더 (Sidebar 위에 걸침) */}
       <Header />
-
-      {/* 좌측 사이드바 (sm+) */}
       <Sidebar />
-
-      {/* 메인 콘텐츠 */}
       <Box
         component="main"
         sx={{
@@ -48,17 +40,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          // 모바일 하단 탭바 높이만큼 여백 확보
           pb: { xs: `${BOTTOM_NAV_HEIGHT}px`, sm: 0 },
         }}
       >
-        {/* fixed Header 높이만큼 밀기 */}
         <Toolbar sx={{ minHeight: '64px !important' }} />
-
         <Box sx={{ flexGrow: 1, p: { xs: 2, sm: 3 } }}>{children}</Box>
       </Box>
-
-      {/* 모바일 하단 탭바 (xs only) */}
       <BottomNav />
     </Box>
   )
