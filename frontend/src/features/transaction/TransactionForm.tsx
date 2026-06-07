@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog, DialogContent,
   Button, Stack, useMediaQuery, useTheme, CircularProgress,
@@ -10,21 +10,12 @@ import { categoryService } from '@/services/category.service'
 import { assetService } from '@/services/asset.service'
 import { transactionService } from '@/services/transaction.service'
 import { useToastStore } from '@/stores/toastStore'
-import { X, CaretLeft, CaretRight, PencilSimple } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import type { Transaction, TransactionCreateRequest, TransactionUpdateRequest } from '@/types/transaction'
+import { getCategoryIcon, AssetIcon } from './categoryIcons'
 
 type TxnTabType = 'INCOME' | 'EXPENSE' | 'TRANSFER'
-type ActiveField = 'date' | 'amount' | 'category' | 'asset' | 'fromAsset' | 'toAsset' | 'memo' | null
-
-const EMOJI: Record<string, string> = {
-  월급: '💰', 급여: '💰', 부수입: '💵', 용돈: '🎁', 상여: '🏆', 금융소득: '📈',
-  식비: '🍔', '교통/차량': '🚗', 교통: '🚗', 문화생활: '🎬', '문화/여가': '🎬',
-  '마트/편의점': '🛒', 쇼핑: '🛒', '패션/미용': '👗', 생활용품: '🧴',
-  '주거/통신': '🏠', 주거: '🏠', 통신: '📱', 건강: '💊', '의료/건강': '💊',
-  교육: '📚', '경조사/회비': '🎊', 부모님: '👪',
-  기타: '➕', 기타수입: '➕', 기타지출: '➕',
-  이체: '🔄', 보험: '🛡️', '적금/투자': '📊',
-}
+type ActiveField = 'date' | 'amount' | 'category' | 'asset' | 'fromAsset' | 'toAsset' | null
 
 function todayStr() {
   const d = new Date()
@@ -48,15 +39,15 @@ function NumKeypad({ digits, onDigits }: { digits: string; onDigits: (d: string)
     onDigits(digits + k)
   }
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', bgcolor: 'grey.50' }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
       {keys.map((k) => (
         <Button
           key={k}
           variant="text"
           onClick={() => handle(k)}
           sx={{
-            py: { xs: 1.8, sm: 1.4 },
-            fontSize: { xs: '1.3rem', sm: '1.15rem' },
+            py: 2,
+            fontSize: '1.4rem',
             fontWeight: 600,
             borderRadius: 0,
             color: k === '⌫' ? 'text.secondary' : 'text.primary',
@@ -92,25 +83,27 @@ function DatePicker({ value, onChange }: { value: string; onChange: (d: string) 
   const nextM = () => setNav(n => n.month === 11 ? { year: n.year + 1, month: 0 } : { ...n, month: n.month + 1 })
 
   return (
-    <Box sx={{ px: 2, pt: 1, pb: 1.5 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+    <Box sx={{ px: 2, pt: 1.5, pb: 2 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
         <IconButton size="small" onClick={prevM}><CaretLeft size={16} /></IconButton>
-        <Typography fontWeight={700} sx={{ fontSize: '0.9rem' }}>{year}년 {month + 1}월</Typography>
+        <Typography fontWeight={700} sx={{ fontSize: '0.95rem' }}>{year}년 {month + 1}월</Typography>
         <IconButton size="small" onClick={nextM}><CaretRight size={16} /></IconButton>
       </Stack>
 
+      {/* 요일 헤더 */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
         {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
-          <Typography key={d} variant="caption" textAlign="center" fontWeight={600}
+          <Typography key={d} variant="caption" textAlign="center" fontWeight={700}
             color={i === 0 ? 'error.main' : i === 6 ? 'info.main' : 'text.secondary'}
-            sx={{ py: 0.25, fontSize: '0.72rem' }}
+            sx={{ fontSize: '0.72rem', py: 0.5 }}
           >
             {d}
           </Typography>
         ))}
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.25 }}>
+      {/* 날짜 셀 — aspectRatio 1로 정사각형 */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5 }}>
         {cells.map((d, i) => {
           if (d === null) return <Box key={`n-${i}`} />
           const str = makeStr(d)
@@ -122,14 +115,15 @@ function DatePicker({ value, onChange }: { value: string; onChange: (d: string) 
               key={d}
               onClick={() => onChange(str)}
               sx={{
-                py: 0.7, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                aspectRatio: '1',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 borderRadius: '50%', cursor: 'pointer',
                 bgcolor: isSel ? 'error.main' : 'transparent',
                 color: isSel ? '#fff' : dow === 0 ? 'error.main' : dow === 6 ? 'info.main' : 'text.primary',
                 fontWeight: isSel || isTod ? 700 : 400,
-                outline: isTod && !isSel ? '1.5px solid' : 'none',
+                outline: isTod && !isSel ? '2px solid' : 'none',
                 outlineColor: 'error.main',
-                fontSize: '0.82rem',
+                fontSize: '0.85rem',
                 '&:hover': { bgcolor: isSel ? 'error.main' : 'action.hover' },
               }}
             >
@@ -160,6 +154,7 @@ export function TransactionForm({
   const showToast = useToastStore((s) => s.show)
   const qc = useQueryClient()
   const isEdit = !!editTarget
+  const memoRef = useRef<HTMLInputElement>(null)
 
   const [tab, setTab] = useState<TxnTabType>(
     isEdit ? (editTarget.type as TxnTabType) : (defaultType ?? 'EXPENSE')
@@ -206,7 +201,7 @@ export function TransactionForm({
   })
   const saving = creating || updating
 
-  const doSave = (continueAdding = false) => {
+  const handleSave = () => {
     const amount = Number(digits)
     if (!amount || amount < 1) { showToast('금액을 입력해주세요.', 'warning'); return }
 
@@ -220,9 +215,7 @@ export function TransactionForm({
             onSuccess: () => {
               qc.invalidateQueries({ queryKey: ['transactions', defaultYear, defaultMonth] })
               showToast('이체가 등록되었습니다.', 'success')
-              if (continueAdding) {
-                setDigits(''); setFromAsset(null); setToAsset(null); setMemo(''); setActiveField(null)
-              } else { onClose() }
+              onClose()
             },
           }
         ),
@@ -243,14 +236,13 @@ export function TransactionForm({
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: ['transactions', defaultYear, defaultMonth] })
           showToast('등록되었습니다.', 'success')
-          if (continueAdding) {
-            setDigits(''); setCatId(null); setMemo(''); setActiveField(null)
-          } else { onClose() }
+          onClose()
         },
       })
     }
   }
 
+  // ── 색상 ──
   const tabColor = tab === 'INCOME' ? theme.palette.info.main : tab === 'EXPENSE' ? '#f44336' : theme.palette.primary.main
   const selCat = allCats.find(c => c.id === catId)
   const selAsset = assets.find(a => a.id === assetId)
@@ -260,35 +252,37 @@ export function TransactionForm({
 
   const toggle = (f: ActiveField) => setActiveField(prev => prev === f ? null : f)
 
-  // ── form row definitions ──
+  // ── 폼 행 정의 ──
   const normalRows = [
-    { key: 'date',     label: '날짜', value: fmtDate(date),   field: 'date'     as ActiveField },
-    { key: 'amount',   label: '금액', value: displayAmt,       field: 'amount'   as ActiveField, accent: true },
-    { key: 'category', label: '분류', value: selCat ? `${EMOJI[selCat.name] ?? ''} ${selCat.name}` : '', field: 'category' as ActiveField },
-    { key: 'asset',    label: '자산', value: selAsset?.name ?? '', field: 'asset' as ActiveField },
-    { key: 'memo',     label: '내용', value: memo,              field: 'memo'     as ActiveField },
+    { key: 'date',     label: '날짜', value: fmtDate(date),                              field: 'date'     as ActiveField },
+    { key: 'amount',   label: '금액', value: displayAmt,                                  field: 'amount'   as ActiveField, accent: true },
+    { key: 'category', label: '분류', value: selCat?.name ?? '',                           field: 'category' as ActiveField },
+    { key: 'asset',    label: '자산', value: selAsset?.name ?? '',                         field: 'asset'    as ActiveField },
   ]
   const transferRows = [
-    { key: 'date',      label: '날짜',   value: fmtDate(date),   field: 'date'      as ActiveField },
-    { key: 'amount',    label: '금액',   value: displayAmt,       field: 'amount'    as ActiveField, accent: true },
+    { key: 'date',      label: '날짜',   value: fmtDate(date),     field: 'date'      as ActiveField },
+    { key: 'amount',    label: '금액',   value: displayAmt,         field: 'amount'    as ActiveField, accent: true },
     { key: 'fromAsset', label: '출금계좌', value: selFrom?.name ?? '', field: 'fromAsset' as ActiveField },
     { key: 'toAsset',   label: '입금계좌', value: selTo?.name ?? '',   field: 'toAsset'   as ActiveField },
-    { key: 'memo',      label: '내용',   value: memo,              field: 'memo'      as ActiveField },
   ]
   const rows = tab === 'TRANSFER' ? transferRows : normalRows
 
   const panelLabel: Record<string, string> = {
     date: '날짜', amount: '금액', category: '분류', asset: '자산',
-    fromAsset: '출금계좌', toAsset: '입금계좌', memo: '내용',
+    fromAsset: '출금계좌', toAsset: '입금계좌',
   }
 
-  const gridItemSx = (sel: boolean) => ({
-    py: 1.5, px: 0.5, textAlign: 'center' as const, cursor: 'pointer',
-    borderRadius: 1.5,
-    bgcolor: sel ? `${tabColor}20` : 'grey.50',
-    border: '1px solid',
+  // 카테고리/자산 카드 공통 스타일
+  const cardSx = (sel: boolean) => ({
+    display: 'flex', flexDirection: 'column' as const,
+    alignItems: 'center', justifyContent: 'center',
+    gap: 0.75, py: 1.5, px: 0.5,
+    cursor: 'pointer', borderRadius: 2,
+    bgcolor: sel ? `${tabColor}18` : 'grey.50',
+    border: '1.5px solid',
     borderColor: sel ? tabColor : 'transparent',
-    '&:hover': { bgcolor: `${tabColor}15` },
+    transition: 'background-color 0.12s',
+    '&:hover': { bgcolor: sel ? `${tabColor}28` : 'grey.100' },
   })
 
   return (
@@ -304,15 +298,14 @@ export function TransactionForm({
           height: isMobile ? '100dvh' : '90vh',
           maxHeight: isMobile ? '100dvh' : '90vh',
           borderRadius: isMobile ? 0 : 2,
-          display: 'flex',
-          flexDirection: 'column',
+          display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
         },
       }}
     >
       <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* ── 탭 + 닫기 ── */}
+        {/* ── 탭 (X 없음) ── */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, borderBottom: '1px solid', borderColor: 'divider' }}>
           {(['INCOME', 'EXPENSE', 'TRANSFER'] as TxnTabType[]).map((t) => {
             const sel = tab === t
@@ -334,204 +327,220 @@ export function TransactionForm({
               </Button>
             )
           })}
-          <IconButton size="small" onClick={onClose} sx={{ mx: 1, flexShrink: 0 }}>
-            <X size={18} />
-          </IconButton>
         </Box>
 
-        {/* ── 폼 행 목록 ── */}
+        {/* ── 폼 행 ── */}
         <Box sx={{ flexShrink: 0 }}>
           {rows.map(({ key, label, value, field, accent }) => {
             const isActive = activeField === field
+            const CatIcon = key === 'category' && selCat ? getCategoryIcon(selCat.name) : null
+            const showAssetIcon = (key === 'asset' && selAsset) || (key === 'fromAsset' && selFrom) || (key === 'toAsset' && selTo)
+
             return (
               <Box
                 key={key}
                 onClick={() => toggle(field)}
                 sx={{
                   display: 'flex', alignItems: 'center',
-                  px: 2.5, minHeight: 52,
+                  px: 2.5, minHeight: 54,
                   cursor: 'pointer',
                   borderBottom: '1px solid',
                   borderColor: isActive ? tabColor : 'divider',
-                  '&:hover': { bgcolor: 'action.hover' },
+                  bgcolor: isActive ? `${tabColor}06` : 'transparent',
+                  '&:hover': { bgcolor: `${tabColor}08` },
                 }}
               >
                 <Typography
                   variant="body2" fontWeight={600} color="text.secondary"
-                  sx={{ minWidth: 68, flexShrink: 0, fontSize: '0.85rem' }}
+                  sx={{ minWidth: 72, flexShrink: 0, fontSize: '0.85rem' }}
                 >
                   {label}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color={accent && value ? tabColor : value ? 'text.primary' : 'text.disabled'}
-                  fontWeight={accent && value ? 700 : 400}
-                  sx={{ flex: 1, fontSize: accent ? '1rem' : '0.88rem' }}
-                >
-                  {value || ''}
-                </Typography>
+                <Stack direction="row" alignItems="center" spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+                  {CatIcon && <CatIcon size={15} color={tabColor} />}
+                  {showAssetIcon && <AssetIcon size={15} color={theme.palette.text.secondary} />}
+                  <Typography
+                    variant="body2" noWrap
+                    color={accent && value ? tabColor : value ? 'text.primary' : 'text.disabled'}
+                    fontWeight={accent && value ? 700 : 400}
+                    sx={{ fontSize: accent ? '1rem' : '0.88rem' }}
+                  >
+                    {value || ''}
+                  </Typography>
+                </Stack>
               </Box>
             )
           })}
+
+          {/* 내용 — 인라인 TextField (패널 없음) */}
+          <Box sx={{
+            display: 'flex', alignItems: 'center',
+            px: 2.5, minHeight: 54,
+            borderBottom: '1px solid', borderColor: 'divider',
+          }}>
+            <Typography
+              variant="body2" fontWeight={600} color="text.secondary"
+              sx={{ minWidth: 72, flexShrink: 0, fontSize: '0.85rem' }}
+            >
+              내용
+            </Typography>
+            <TextField
+              inputRef={memoRef}
+              placeholder="내용 (선택)"
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              variant="standard"
+              inputProps={{ maxLength: 200 }}
+              onClick={() => setActiveField(null)}
+              slotProps={{ input: { disableUnderline: true } }}
+              sx={{
+                flex: 1,
+                '& .MuiInputBase-input': { fontSize: '0.88rem', py: 0 },
+              }}
+            />
+          </Box>
         </Box>
 
-        {/* ── 여백 ── */}
-        <Box sx={{ flex: 1, minHeight: 0 }} />
-
-        {/* ── 하단 컨텍스트 패널 ── */}
-        {activeField && (
-          <Box sx={{ flexShrink: 0, borderTop: '1px solid', borderColor: 'divider' }}>
+        {/* ── 여백 또는 패널 ── */}
+        {activeField ? (
+          /* 하단 컨텍스트 패널 */
+          <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', borderTop: '1px solid', borderColor: 'divider' }}>
             {/* 다크 헤더 */}
-            <Box sx={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              px: 2, py: 1.2, bgcolor: '#1a1a1a',
-            }}>
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Typography fontWeight={700} color="#fff" sx={{ fontSize: '0.88rem' }}>
-                  {panelLabel[activeField]}
-                </Typography>
-                {activeField === 'category' && (
-                  <IconButton size="small" sx={{ color: '#888', p: 0.5 }}>
-                    <PencilSimple size={14} />
-                  </IconButton>
-                )}
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={0.5}>
+            <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.25, bgcolor: '#1a1a1a' }}>
+              <Typography fontWeight={700} color="#fff" sx={{ fontSize: '0.9rem' }}>
+                {panelLabel[activeField]}
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1}>
                 {activeField === 'date' && (
-                  <Button
-                    size="small"
-                    onClick={() => setDate(todayStr())}
-                    sx={{ color: '#aaa', fontSize: '0.75rem', py: 0.25, minWidth: 0 }}
+                  <Button size="small" onClick={() => setDate(todayStr())}
+                    sx={{ color: '#bbb', fontSize: '0.75rem', py: 0.25, minWidth: 0 }}
                   >
                     오늘
                   </Button>
                 )}
-                <IconButton size="small" sx={{ color: '#888' }} onClick={() => setActiveField(null)}>
-                  <X size={15} />
-                </IconButton>
+                <Button size="small" onClick={() => setActiveField(null)}
+                  sx={{ color: '#bbb', fontSize: '0.75rem', py: 0.25, minWidth: 0 }}
+                >
+                  닫기
+                </Button>
               </Stack>
             </Box>
 
-            {/* 금액 → 키패드 */}
-            {activeField === 'amount' && (
-              <NumKeypad digits={digits} onDigits={setDigits} />
-            )}
+            {/* 패널 콘텐츠 (스크롤 가능) */}
+            <Box sx={{ flex: 1, overflowY: 'auto', bgcolor: 'background.paper' }}>
 
-            {/* 분류 → 카테고리 그리드 */}
-            {activeField === 'category' && (
-              <Box sx={{ px: 1.5, py: 1.5, maxHeight: 264, overflowY: 'auto' }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
-                  {typeCats.map((cat) => {
-                    const sel = catId === cat.id
-                    return (
-                      <Box key={cat.id} onClick={() => { setCatId(cat.id); setActiveField(null) }} sx={gridItemSx(sel)}>
-                        <Typography sx={{ fontSize: '1.5rem', lineHeight: 1, mb: 0.5 }}>
-                          {EMOJI[cat.name] ?? '📦'}
-                        </Typography>
-                        <Typography variant="caption" fontWeight={sel ? 700 : 400}
-                          color={sel ? tabColor : 'text.primary'}
-                          sx={{ fontSize: '0.7rem', lineHeight: 1.2, display: 'block' }}
-                        >
-                          {cat.name}
-                        </Typography>
-                      </Box>
-                    )
-                  })}
-                  <Box sx={gridItemSx(false)}>
-                    <Typography sx={{ fontSize: '1.5rem', lineHeight: 1, mb: 0.5 }}>➕</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>추가</Typography>
-                  </Box>
-                </Box>
-              </Box>
-            )}
+              {/* 금액 키패드 */}
+              {activeField === 'amount' && (
+                <NumKeypad digits={digits} onDigits={setDigits} />
+              )}
 
-            {/* 자산 / 출금계좌 / 입금계좌 → 자산 그리드 */}
-            {(activeField === 'asset' || activeField === 'fromAsset' || activeField === 'toAsset') && (
-              <Box sx={{ px: 1.5, py: 1.5, maxHeight: 264, overflowY: 'auto' }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
-                  {activeField === 'asset' && (
-                    <Box onClick={() => { setAssetId(null); setActiveField(null) }} sx={gridItemSx(assetId === null)}>
-                      <Typography variant="caption" fontWeight={assetId === null ? 700 : 400}
-                        color={assetId === null ? tabColor : 'text.primary'}
-                        sx={{ fontSize: '0.82rem' }}
-                      >
-                        없음
-                      </Typography>
+              {/* 분류 그리드 */}
+              {activeField === 'category' && (
+                <Box sx={{ p: 1.5 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+                    {typeCats.map((cat) => {
+                      const sel = catId === cat.id
+                      const Icon = getCategoryIcon(cat.name)
+                      return (
+                        <Box key={cat.id} onClick={() => { setCatId(cat.id); setActiveField(null) }} sx={cardSx(sel)}>
+                          <Icon size={26} color={sel ? tabColor : theme.palette.text.secondary} weight={sel ? 'fill' : 'regular'} />
+                          <Typography variant="caption"
+                            fontWeight={sel ? 700 : 500}
+                            color={sel ? tabColor : 'text.primary'}
+                            sx={{ fontSize: '0.72rem', lineHeight: 1.3, textAlign: 'center' }}
+                          >
+                            {cat.name}
+                          </Typography>
+                        </Box>
+                      )
+                    })}
+                    {/* 추가 버튼 */}
+                    <Box sx={{ ...cardSx(false), color: 'text.disabled' }}>
+                      <Typography sx={{ fontSize: '1.4rem', lineHeight: 1 }}>＋</Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.72rem' }}>추가</Typography>
                     </Box>
-                  )}
-                  {assets.map((a) => {
-                    const cur = activeField === 'fromAsset' ? fromAsset : activeField === 'toAsset' ? toAsset : assetId
-                    const isSel = cur === a.id
-                    return (
-                      <Box
-                        key={a.id}
-                        onClick={() => {
-                          if (activeField === 'fromAsset') { setFromAsset(a.id); setActiveField(null) }
-                          else if (activeField === 'toAsset') { setToAsset(a.id); setActiveField(null) }
-                          else { setAssetId(isSel ? null : a.id); setActiveField(null) }
-                        }}
-                        sx={gridItemSx(isSel)}
-                      >
-                        <Typography variant="caption" fontWeight={isSel ? 700 : 400}
-                          color={isSel ? tabColor : 'text.primary'}
-                          sx={{ fontSize: '0.78rem', lineHeight: 1.4, display: 'block' }}
-                        >
-                          {a.name}
-                        </Typography>
-                      </Box>
-                    )
-                  })}
-                  <Box sx={gridItemSx(false)}>
-                    <Typography sx={{ fontSize: '1.5rem', lineHeight: 1, mb: 0.5 }}>➕</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>추가</Typography>
                   </Box>
                 </Box>
-              </Box>
-            )}
+              )}
 
-            {/* 날짜 → 캘린더 */}
-            {activeField === 'date' && (
-              <DatePicker value={date} onChange={(d) => setDate(d)} />
-            )}
+              {/* 자산 그리드 */}
+              {(activeField === 'asset' || activeField === 'fromAsset' || activeField === 'toAsset') && (
+                <Box sx={{ p: 1.5 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+                    {/* 없음 (일반 자산만) */}
+                    {activeField === 'asset' && (
+                      <Box onClick={() => { setAssetId(null); setActiveField(null) }} sx={cardSx(assetId === null)}>
+                        <AssetIcon size={26} color={assetId === null ? tabColor : theme.palette.text.secondary}
+                          weight={assetId === null ? 'fill' : 'regular'} />
+                        <Typography variant="caption" fontWeight={assetId === null ? 700 : 500}
+                          color={assetId === null ? tabColor : 'text.primary'}
+                          sx={{ fontSize: '0.72rem' }}
+                        >
+                          없음
+                        </Typography>
+                      </Box>
+                    )}
+                    {assets.map((a) => {
+                      const cur = activeField === 'fromAsset' ? fromAsset : activeField === 'toAsset' ? toAsset : assetId
+                      const isSel = cur === a.id
+                      return (
+                        <Box
+                          key={a.id}
+                          onClick={() => {
+                            if (activeField === 'fromAsset') { setFromAsset(a.id); setActiveField(null) }
+                            else if (activeField === 'toAsset') { setToAsset(a.id); setActiveField(null) }
+                            else { setAssetId(isSel ? null : a.id); setActiveField(null) }
+                          }}
+                          sx={cardSx(isSel)}
+                        >
+                          <AssetIcon size={26} color={isSel ? tabColor : theme.palette.text.secondary}
+                            weight={isSel ? 'fill' : 'regular'} />
+                          <Typography variant="caption" fontWeight={isSel ? 700 : 500}
+                            color={isSel ? tabColor : 'text.primary'}
+                            sx={{ fontSize: '0.72rem', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}
+                          >
+                            {a.name}
+                          </Typography>
+                        </Box>
+                      )
+                    })}
+                    {/* 추가 버튼 */}
+                    <Box sx={{ ...cardSx(false), color: 'text.disabled' }}>
+                      <Typography sx={{ fontSize: '1.4rem', lineHeight: 1 }}>＋</Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.72rem' }}>추가</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
 
-            {/* 내용 → 텍스트 입력 */}
-            {activeField === 'memo' && (
-              <Box sx={{ px: 2, py: 1.5 }}>
-                <TextField
-                  fullWidth autoFocus multiline rows={3}
-                  placeholder="내용을 입력하세요"
-                  value={memo}
-                  onChange={(e) => setMemo(e.target.value)}
-                  inputProps={{ maxLength: 200 }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setActiveField(null) } }}
-                />
-                <Button size="small" onClick={() => setActiveField(null)} sx={{ mt: 1 }}>완료</Button>
-              </Box>
-            )}
+              {/* 날짜 캘린더 */}
+              {activeField === 'date' && (
+                <DatePicker value={date} onChange={(d) => setDate(d)} />
+              )}
+            </Box>
           </Box>
+        ) : (
+          <Box sx={{ flex: 1 }} />
         )}
 
-        {/* ── 저장 버튼 ── */}
+        {/* ── 버튼: 취소 + 저장 ── */}
         <Box sx={{
           flexShrink: 0, px: 2, pt: 1.25,
           pb: isMobile ? 'max(env(safe-area-inset-bottom), 16px)' : 1.5,
           borderTop: '1px solid', borderColor: 'divider',
           display: 'flex', gap: 1,
         }}>
-          {!isEdit && (
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={() => doSave(true)}
-              disabled={saving}
-              sx={{ flex: '0 0 auto', px: 3, py: 1.5, fontWeight: 700, borderRadius: 2 }}
-            >
-              계속
-            </Button>
-          )}
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={onClose}
+            sx={{ flex: '0 0 auto', px: 3, py: 1.5, fontWeight: 700, borderRadius: 2, color: 'text.secondary', borderColor: 'divider' }}
+          >
+            취소
+          </Button>
           <Button
             fullWidth variant="contained" size="large"
-            onClick={() => doSave(false)}
+            onClick={handleSave}
             disabled={saving}
             sx={{
               py: 1.5, fontSize: '1rem', fontWeight: 700, borderRadius: 2,

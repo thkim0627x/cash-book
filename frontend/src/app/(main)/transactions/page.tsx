@@ -12,6 +12,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionService } from '@/services/transaction.service'
 import { TransactionForm } from '@/features/transaction/TransactionForm'
+import { getCategoryIcon } from '@/features/transaction/categoryIcons'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CalendarGrid } from '@/features/calendar/CalendarGrid'
 import { DayDetailDrawer } from '@/features/calendar/DayDetailDrawer'
@@ -220,6 +221,10 @@ interface TxnRowProps {
 }
 
 function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnRowProps) {
+  const CatIcon = getCategoryIcon(txn.categoryName ?? '')
+  const iconColor = txn.type === 'INCOME' ? '#0277bd' : '#c62828'
+  const avatarBg = txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'
+
   return (
     <Box
       onClick={onSelect}
@@ -233,18 +238,8 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
         '&:hover .txn-actions': { opacity: 1 },
       }}
     >
-      <Avatar
-        sx={{
-          width: 32, height: 32, fontSize: '0.7rem', flexShrink: 0,
-          ...(txn.categoryColor
-            ? { bgcolor: txn.categoryColor, color: '#fff' }
-            : txn.type === 'INCOME'
-              ? { bgcolor: '#e1f5fe', color: '#0277bd' }
-              : { bgcolor: '#ffebee', color: '#c62828' }
-          ),
-        }}
-      >
-        {txn.categoryName?.slice(0, 1)}
+      <Avatar sx={{ width: 34, height: 34, flexShrink: 0, bgcolor: avatarBg }}>
+        <CatIcon size={17} color={iconColor} weight="fill" />
       </Avatar>
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
