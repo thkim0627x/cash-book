@@ -24,6 +24,7 @@ export interface TransactionCreateRequest {
 }
 
 export interface TransactionUpdateRequest {
+  type: string
   categoryId: number
   amount: number
   txnDate: string
