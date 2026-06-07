@@ -227,9 +227,7 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
         display: 'flex', alignItems: 'center', gap: 1.5,
         px: { xs: 2, sm: 2.5 }, py: { xs: 0.9, sm: 1 },
         cursor: 'pointer',
-        bgcolor: isSelected
-          ? 'action.selected'
-          : txn.type === 'INCOME' ? 'rgba(227,242,253,0.45)' : 'rgba(255,235,238,0.45)',
+        bgcolor: isSelected ? 'action.selected' : 'background.paper',
         transition: 'background-color 0.12s',
         '&:hover': { bgcolor: isSelected ? 'action.selected' : 'action.hover' },
         '&:hover .txn-actions': { opacity: 1 },
@@ -396,7 +394,7 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
       <Stack spacing={2} sx={{ mb: 3 }}>
         <DetailRow label="날짜" value={`${d.getFullYear()}년 ${d.getMonth() + 1}월 ${dd}일 ${dayFull}`} />
         <DetailRow label="유형" value={isIncome ? '수입' : '지출'} valueColor={isIncome ? 'info.main' : 'error.main'} />
-        <DetailRow label="카테고리" value={txn.categoryName ?? '-'} />
+        <DetailRow label="분류" value={txn.categoryName ?? '-'} />
         {txn.memo && <DetailRow label="내용" value={txn.memo} />}
       </Stack>
 
