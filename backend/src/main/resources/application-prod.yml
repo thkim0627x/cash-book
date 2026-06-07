@@ -6,10 +6,15 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5
-      minimum-idle: 2
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      minimum-idle: 1
+      connection-timeout: 20000  # 30s→20s: 빠른 실패
+      idle-timeout: 300000       # 600s→300s: 유휴 커넥션 빠르게 반환
+      max-lifetime: 900000       # 1800s→900s: Supabase 타임아웃 전 교체
+      keepalive-time: 60000      # 60s마다 ping — Supabase 유휴 끊김 방지
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/init.sql
   batch:
     job:
       enabled: false

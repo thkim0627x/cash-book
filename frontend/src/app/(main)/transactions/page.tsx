@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect } from 'react'
 import {
   Box, Card, CardContent, Chip, Typography, Stack, Alert, Skeleton, Avatar, Divider,
   IconButton, Tooltip, Fab, Drawer, Button, InputBase, ToggleButtonGroup,
@@ -12,6 +12,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionService } from '@/services/transaction.service'
 import { TransactionForm } from '@/features/transaction/TransactionForm'
+import { getCategoryIcon } from '@/features/transaction/categoryIcons'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CalendarGrid } from '@/features/calendar/CalendarGrid'
 import { DayDetailDrawer } from '@/features/calendar/DayDetailDrawer'
@@ -165,30 +166,33 @@ function FilterBar({
             {totalCount}건
           </Typography>
 
-          {searchOpen ? (
-            <Paper sx={{
-              display: 'flex', alignItems: 'center', px: 1, height: 30,
-              border: '1px solid', borderColor: 'primary.main', borderRadius: 1.5, boxShadow: 'none',
-            }}>
-              <MagnifyingGlass size={13} style={{ flexShrink: 0, color: '#999' }} />
-              <InputBase
-                autoFocus
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="검색..."
-                sx={{ ml: 0.75, fontSize: '0.78rem', width: 90 }}
-              />
-              <IconButton size="small" sx={{ p: 0.25 }} onClick={() => { onSearchChange(''); setSearchOpen(false) }}>
-                <X size={11} />
-              </IconButton>
-            </Paper>
-          ) : (
-            <Tooltip title="검색">
-              <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ p: 0.5 }}>
-                <MagnifyingGlass size={15} />
-              </IconButton>
-            </Tooltip>
-          )}
+          {/* 데스크톱 전용 검색 — 모바일은 FAB으로 대체 */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+            {searchOpen ? (
+              <Paper sx={{
+                display: 'flex', alignItems: 'center', px: 1, height: 30,
+                border: '1px solid', borderColor: 'primary.main', borderRadius: 1.5, boxShadow: 'none',
+              }}>
+                <MagnifyingGlass size={13} style={{ flexShrink: 0, color: '#999' }} />
+                <InputBase
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  placeholder="검색..."
+                  sx={{ ml: 0.75, fontSize: '0.78rem', width: 90 }}
+                />
+                <IconButton size="small" sx={{ p: 0.25 }} onClick={() => { onSearchChange(''); setSearchOpen(false) }}>
+                  <X size={11} />
+                </IconButton>
+              </Paper>
+            ) : (
+              <Tooltip title="검색">
+                <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ p: 0.5 }}>
+                  <MagnifyingGlass size={15} />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
 
           <Tooltip title="엑셀 다운로드">
             <span>
@@ -220,6 +224,10 @@ interface TxnRowProps {
 }
 
 function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnRowProps) {
+  const CatIcon = getCategoryIcon(txn.categoryName ?? '')
+  const iconColor = txn.type === 'INCOME' ? '#0277bd' : '#c62828'
+  const avatarBg = txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'
+
   return (
     <Box
       onClick={onSelect}
@@ -227,24 +235,14 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
         display: 'flex', alignItems: 'center', gap: 1.5,
         px: { xs: 2, sm: 2.5 }, py: { xs: 0.9, sm: 1 },
         cursor: 'pointer',
-        bgcolor: isSelected ? 'action.selected' : 'transparent',
+        bgcolor: isSelected ? 'action.selected' : 'background.paper',
         transition: 'background-color 0.12s',
         '&:hover': { bgcolor: isSelected ? 'action.selected' : 'action.hover' },
         '&:hover .txn-actions': { opacity: 1 },
       }}
     >
-      <Avatar
-        sx={{
-          width: 32, height: 32, fontSize: '0.7rem', flexShrink: 0,
-          ...(txn.categoryColor
-            ? { bgcolor: txn.categoryColor, color: '#fff' }
-            : txn.type === 'INCOME'
-              ? { bgcolor: '#e1f5fe', color: '#0277bd' }
-              : { bgcolor: '#ffebee', color: '#c62828' }
-          ),
-        }}
-      >
-        {txn.categoryName?.slice(0, 1)}
+      <Avatar sx={{ width: 34, height: 34, flexShrink: 0, bgcolor: avatarBg }}>
+        <CatIcon size={17} color={iconColor} weight="fill" />
       </Avatar>
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -394,7 +392,7 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
       <Stack spacing={2} sx={{ mb: 3 }}>
         <DetailRow label="날짜" value={`${d.getFullYear()}년 ${d.getMonth() + 1}월 ${dd}일 ${dayFull}`} />
         <DetailRow label="유형" value={isIncome ? '수입' : '지출'} valueColor={isIncome ? 'info.main' : 'error.main'} />
-        <DetailRow label="카테고리" value={txn.categoryName ?? '-'} />
+        <DetailRow label="분류" value={txn.categoryName ?? '-'} />
         {txn.memo && <DetailRow label="내용" value={txn.memo} />}
       </Stack>
 
@@ -471,6 +469,7 @@ export default function TransactionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
   const [calSelectedDate, setCalSelectedDate] = useState<string | null>(null)
   const [calDrawerOpen, setCalDrawerOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
 
   const showToast = useToastStore((s) => s.show)
   const queryClientInstance = useQueryClient()
@@ -479,6 +478,12 @@ export default function TransactionsPage() {
   const isTabletUp = useMediaQuery(theme.breakpoints.up('md'))      // ≥ 900px
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+
+  // 페이지 진입 시 최상단으로 — useLayoutEffect로 페인트 전 동기 실행
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+  }, [])
 
   const { data: txnRes, isLoading, isError } = useQuery({
     queryKey: ['transactions', year, month],
@@ -523,11 +528,11 @@ export default function TransactionsPage() {
 
   const prevMonth = () => {
     if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1)
-    setSelectedTxn(null)
+    setSelectedTxn(null); window.scrollTo(0, 0)
   }
   const nextMonth = () => {
     if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1)
-    setSelectedTxn(null)
+    setSelectedTxn(null); window.scrollTo(0, 0)
   }
 
   const handleTypeChange = (v: 'ALL' | TransactionType) => { setTypeFilter(v) }
@@ -616,6 +621,28 @@ export default function TransactionsPage() {
         onPrev={prevMonth} onNext={nextMonth}
       />
 
+      {/* ── 모바일 검색 바 (FAB 클릭 시 표시) ── */}
+      {isMobile && mobileSearchOpen && (
+        <Paper elevation={0} sx={{
+          display: 'flex', alignItems: 'center',
+          px: 1.5, py: 0.5, mb: 1.5,
+          border: '1px solid', borderColor: 'primary.main',
+          borderRadius: 2,
+        }}>
+          <MagnifyingGlass size={18} color="#999" style={{ flexShrink: 0 }} />
+          <InputBase
+            autoFocus
+            placeholder="카테고리, 내용 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ flex: 1, mx: 1, '& input': { fontSize: '16px' } }}
+          />
+          <IconButton size="small" onClick={() => { setMobileSearchOpen(false); setSearchQuery('') }}>
+            <X size={16} />
+          </IconButton>
+        </Paper>
+      )}
+
       {/* ── 필터 바 ── */}
       <FilterBar
         typeFilter={typeFilter}
@@ -668,6 +695,7 @@ export default function TransactionsPage() {
         anchor="bottom"
         open={mobileDrawerOpen && isMobile}
         onClose={() => setMobileDrawerOpen(false)}
+        sx={{ zIndex: (t) => t.zIndex.drawer + 3 }}
         PaperProps={{
           sx: {
             borderRadius: '16px 16px 0 0',
@@ -675,6 +703,7 @@ export default function TransactionsPage() {
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            pb: 'env(safe-area-inset-bottom)',
           }
         }}
       >
@@ -689,11 +718,27 @@ export default function TransactionsPage() {
         />
       </Drawer>
 
-      {/* 모바일 FAB */}
+      {/* 모바일 FAB — 검색(왼쪽) + 추가(오른쪽) */}
       {isMobile && (
-        <Fab color="primary" onClick={handleAddClick} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
-          <Plus weight="bold" size={24} />
-        </Fab>
+        <>
+          {/* 검색 FAB */}
+          <Fab
+            onClick={() => setMobileSearchOpen(v => !v)}
+            sx={{
+              position: 'fixed', bottom: 80, right: 84, zIndex: 10,
+              bgcolor: mobileSearchOpen ? 'primary.main' : 'background.paper',
+              color: mobileSearchOpen ? '#fff' : 'text.secondary',
+              boxShadow: 2,
+              '&:hover': { bgcolor: mobileSearchOpen ? 'primary.dark' : 'grey.100' },
+            }}
+          >
+            <MagnifyingGlass size={22} />
+          </Fab>
+          {/* 추가 FAB */}
+          <Fab color="primary" onClick={handleAddClick} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
+            <Plus weight="bold" size={24} />
+          </Fab>
+        </>
       )}
 
       <TransactionForm

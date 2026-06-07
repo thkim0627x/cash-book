@@ -28,19 +28,46 @@ export function DayDetailDrawer({ open, onClose, dateKey, transactions }: DayDet
   const balance = income - expense
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: '100%', sm: 380 }, p: 0 } }}>
-      {/* 헤더 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, borderBottom: '1px solid', borderColor: 'divider', position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 1 }}>
+    <Drawer
+      anchor="bottom"
+      open={open}
+      onClose={onClose}
+      sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
+      PaperProps={{
+        sx: {
+          borderRadius: '16px 16px 0 0',
+          maxHeight: '80dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          pb: 'env(safe-area-inset-bottom)',
+        }
+      }}
+    >
+      {/* 드래그 핸들 */}
+      <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mt: 1.5, mb: 0, flexShrink: 0 }} />
+
+      {/* 헤더 + 닫기 버튼 */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        px: 2.5, py: 1.5,
+        borderBottom: '1px solid', borderColor: 'divider',
+        flexShrink: 0,
+      }}>
         <Box>
-          <Typography variant="h6">{dateKey ? formatDisplayDate(dateKey) : ''}</Typography>
+          <Typography variant="subtitle1" fontWeight={700}>
+            {dateKey ? formatDisplayDate(dateKey) : ''}
+          </Typography>
           <Typography variant="caption" color="text.secondary">{dayTransactions.length}건의 거래</Typography>
         </Box>
-        <IconButton onClick={onClose} size="small"><X size={20} /></IconButton>
+        <IconButton onClick={onClose} size="small">
+          <X size={20} />
+        </IconButton>
       </Box>
 
       {/* 당일 요약 */}
       {dayTransactions.length > 0 && (
-        <Box sx={{ px: 3, py: 2, bgcolor: 'grey.50', borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ px: 2.5, py: 1.5, bgcolor: 'grey.50', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
           <Stack direction="row" spacing={3}>
             <Box>
               <Typography variant="caption" color="text.secondary" display="block">수입</Typography>
@@ -73,7 +100,7 @@ export function DayDetailDrawer({ open, onClose, dateKey, transactions }: DayDet
             {dayTransactions.map((txn, idx) => (
               <Box key={txn.id}>
                 {idx > 0 && <Divider component="li" />}
-                <ListItem sx={{ px: 3, py: 1.5 }}>
+                <ListItem sx={{ px: 2.5, py: 1.5 }}>
                   <ListItemAvatar sx={{ minWidth: 44 }}>
                     <Avatar
                       sx={{
