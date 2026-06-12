@@ -215,9 +215,8 @@ function DatePicker({
         px: 1.5,
         pt: 0.5,
         pb: 0.5,
-        maxWidth: 700,
+        maxWidth: 500,
         mx: 'auto',
-        height: '100%',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -228,7 +227,7 @@ function DatePicker({
         alignItems="center"
         justifyContent="space-between"
         sx={{
-          mb: 1,
+          mb: 5,
           flexShrink: 0,
         }}
       >
@@ -301,13 +300,9 @@ function DatePicker({
       {/* 날짜 */}
       <Box
         sx={{
-          flex: 1,
-          minHeight: 0,
-
           display: 'grid',
           gridTemplateColumns: 'repeat(7, 1fr)',
-          gridTemplateRows: 'repeat(6, minmax(0, 1fr))',
-
+          gridTemplateRows: 'repeat(6, 30px)',
           gap: 0.25,
         }}
       >
@@ -335,11 +330,8 @@ function DatePicker({
             >
               <Box
                 sx={{
-                  width: '72%',
-                  height: '72%',
-
-                  maxWidth: 40,
-                  maxHeight: 40,
+                  width: 26,
+                  height: 26,
 
                   display: 'flex',
                   alignItems: 'center',
@@ -629,8 +621,7 @@ export function TransactionForm({
     [recentCatIds, typeCats]
   )
 
-  const displayCats =
-    recentCats.length > 0 ? recentCats : typeCats.slice(0, RECENT_MAX)
+  const displayCats = typeCats
 
   const sortedAssets = useMemo(() => {
     const recentSet = new Set(recentAssetIds)
@@ -749,7 +740,7 @@ export function TransactionForm({
     tab === 'INCOME'
       ? theme.palette.info.main
       : tab === 'EXPENSE'
-        ? '#f44336'
+        ? theme.palette.error.main
         : theme.palette.primary.main
   const selCat = allCats.find((c) => c.id === catId)
   const selAsset = assets.find((a) => a.id === assetId)
@@ -821,8 +812,8 @@ export function TransactionForm({
         fullScreen={isMobile}
         PaperProps={{
           sx: {
-            m: isMobile ? 0 : undefined,
-            height: isMobile ? '100dvh' : '90vh',
+            m: isMobile ? 0 : 2,
+            height: isMobile ? '100dvh' : 715,
             maxHeight: isMobile ? '100dvh' : '90vh',
             borderRadius: isMobile ? 0 : 2,
             display: 'flex',
@@ -861,7 +852,7 @@ export function TransactionForm({
               }[t]
               const c = {
                 INCOME: theme.palette.info.main,
-                EXPENSE: '#f44336',
+                EXPENSE: theme.palette.error.main,
                 TRANSFER: theme.palette.primary.main,
               }[t]
               return (
@@ -919,6 +910,8 @@ export function TransactionForm({
                   fontWeight: displayAmt ? 700 : 400,
                   color: displayAmt ? tabColor : 'text.disabled',
                   letterSpacing: '-0.01em',
+                  textAlign: 'right',
+                  pr: 0.5,
                 }}
               >
                 {displayAmt ? `₩ ${displayAmt}` : '금액 입력'}
@@ -1102,140 +1095,122 @@ export function TransactionForm({
             </Box>
           </Box>
 
-          {/* ── 패널 (날짜/분류/자산) ── */}
-          {activeField && activeField !== 'amount' && (
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                bgcolor: 'grey.50',
-                borderTop: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              {/* 날짜 패널 */}
-              {activeField === 'date' && (
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <Box
-                    sx={{
-                      flex: 1,
-                      minHeight: 0,
-                      overflow: 'auto',
-                      display: 'flex',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        setDate(todayStr())
-                        setActiveField(null)
-                      }}
-                      sx={{
-                        fontSize: '0.75rem',
-                        color: 'text.secondary',
-                        py: 0.25,
-                        minWidth: 0,
-                      }}
-                    >
-                      오늘
-                    </Button>
-                  </Box>
-                  <DatePicker
-                    value={date}
-                    onChange={(d) => {
-                      setDate(d)
+          {/* ── 패널 / 스페이서 — flex:1로 남은 공간 차지, 버튼 항상 맨 아래 고정 ── */}
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+              ...(activeField && activeField !== 'amount'
+                ? {
+                    bgcolor: 'background.default',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                  }
+                : {}),
+            }}
+          >
+            {/* 날짜 패널 */}
+            {activeField === 'date' && (
+              <Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    px: 2,
+                    pt: 0.5,
+                  }}
+                >
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setDate(todayStr())
                       setActiveField(null)
                     }}
-                  />
+                    sx={{
+                      fontSize: '0.75rem',
+                      color: 'text.secondary',
+                      py: 0.25,
+                      minWidth: 0,
+                    }}
+                  >
+                    오늘
+                  </Button>
                 </Box>
-              )}
+                <DatePicker
+                  value={date}
+                  onChange={(d) => {
+                    setDate(d)
+                    setActiveField(null)
+                  }}
+                />
+              </Box>
+            )}
 
-              {/* 분류 패널 */}
-              {activeField === 'category' && (
-                <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 1.5 }}>
-                  <Stack direction="row" flexWrap="wrap" gap={1}>
-                    {displayCats.map((cat) => {
-                      const sel = catId === cat.id
-                      const Icon = getCategoryIcon(cat.name)
-                      return (
-                        <Chip
-                          key={cat.id}
-                          icon={
-                            <Icon size={13} weight={sel ? 'fill' : 'regular'} />
-                          }
-                          label={cat.name}
-                          size="small"
-                          onClick={() => handleCatSelect(cat.id)}
-                          sx={chipSx(sel, tabColor)}
-                        />
-                      )
-                    })}
-                    <Chip
-                      label="전체 보기 +"
-                      size="small"
-                      onClick={() => setCatSheetOpen(true)}
-                      sx={{
-                        bgcolor: 'grey.200',
-                        color: 'text.secondary',
-                        fontWeight: 500,
-                      }}
-                    />
-                  </Stack>
-                </Box>
-              )}
+            {/* 분류 패널 */}
+            {activeField === 'category' && (
+              <Box sx={{ p: 1.5 }}>
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {displayCats.map((cat) => {
+                    const sel = catId === cat.id
+                    const Icon = getCategoryIcon(cat.name)
+                    return (
+                      <Chip
+                        key={cat.id}
+                        icon={
+                          <Icon size={15} weight={sel ? 'fill' : 'regular'} />
+                        }
+                        label={cat.name}
+                        onClick={() => handleCatSelect(cat.id)}
+                        sx={chipSx(sel, tabColor)}
+                      />
+                    )
+                  })}
+                </Stack>
+              </Box>
+            )}
 
-              {/* 자산 패널 (asset / fromAsset / toAsset) */}
-              {(activeField === 'asset' ||
-                activeField === 'fromAsset' ||
-                activeField === 'toAsset') && (
-                <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 1.5 }}>
-                  <Stack direction="row" flexWrap="wrap" gap={1}>
-                    {sortedAssets.map((a) => {
-                      const cur =
-                        activeField === 'fromAsset'
-                          ? fromAsset
-                          : activeField === 'toAsset'
-                            ? toAsset
-                            : assetId
-                      const color =
-                        tab === 'TRANSFER'
-                          ? theme.palette.primary.main
-                          : tabColor
-                      const sel = cur === a.id
-                      return (
-                        <Chip
-                          key={a.id}
-                          icon={
-                            <AssetIcon
-                              size={13}
-                              weight={sel ? 'fill' : 'regular'}
-                            />
-                          }
-                          label={a.name}
-                          size="small"
-                          onClick={() => {
-                            handleAssetSelect(
-                              activeField as 'asset' | 'fromAsset' | 'toAsset',
-                              a.id
-                            )
-                            if (activeField !== 'asset') setActiveField(null)
-                          }}
-                          sx={chipSx(sel, color)}
-                        />
-                      )
-                    })}
-                  </Stack>
-                </Box>
-              )}
-            </Box>
-          )}
-
-          {/* 패널 없을 때 여백 */}
-          {(!activeField || activeField === 'amount') &&
-            activeField !== 'amount' && <Box sx={{ flex: 1 }} />}
+            {/* 자산 패널 (asset / fromAsset / toAsset) */}
+            {(activeField === 'asset' ||
+              activeField === 'fromAsset' ||
+              activeField === 'toAsset') && (
+              <Box sx={{ p: 1.5 }}>
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {sortedAssets.map((a) => {
+                    const cur =
+                      activeField === 'fromAsset'
+                        ? fromAsset
+                        : activeField === 'toAsset'
+                          ? toAsset
+                          : assetId
+                    const color =
+                      tab === 'TRANSFER' ? theme.palette.primary.main : tabColor
+                    const sel = cur === a.id
+                    return (
+                      <Chip
+                        key={a.id}
+                        icon={
+                          <AssetIcon
+                            size={15}
+                            weight={sel ? 'fill' : 'regular'}
+                          />
+                        }
+                        label={a.name}
+                        onClick={() => {
+                          handleAssetSelect(
+                            activeField as 'asset' | 'fromAsset' | 'toAsset',
+                            a.id
+                          )
+                          if (activeField !== 'asset') setActiveField(null)
+                        }}
+                        sx={chipSx(sel, color)}
+                      />
+                    )
+                  })}
+                </Stack>
+              </Box>
+            )}
+          </Box>
 
           {/* ── 숫자 키패드 ── */}
           {activeField === 'amount' && (

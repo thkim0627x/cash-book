@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "4321", "--directory", "frontend/mockup"],
       "port": 4321
+    },
+    {
+      "name": "frontend-dev",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["--cwd", "frontend", "dev"],
+      "port": 3000
     }
   ]
 }
