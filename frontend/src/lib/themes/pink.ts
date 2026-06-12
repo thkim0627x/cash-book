@@ -18,10 +18,13 @@ export const pinkTheme: PresetTokens = {
     default: '#FDF6F8',
     paper: '#FFFFFF',
     sidebar: '#FFFFFF',
+    canvasDeep: '#F5E6EC',
   },
   text: {
     primary: '#2E1A22',
     secondary: '#8C6070',
+    muted: '#B89BA5',
   },
   divider: '#F0DDE5',
+  divider2: '#E8D0DA',
 }

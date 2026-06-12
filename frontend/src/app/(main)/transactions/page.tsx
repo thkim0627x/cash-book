@@ -1,41 +1,97 @@
+/* eslint-disable react-hooks/static-components */
 'use client'
-import { useState, useMemo, useEffect, useLayoutEffect } from 'react'
-import {
-  Box, Card, CardContent, Chip, Typography, Stack, Alert, Skeleton, Avatar, Divider,
-  IconButton, Tooltip, Fab, Drawer, Button, InputBase, ToggleButtonGroup,
-  ToggleButton, useMediaQuery, useTheme, Paper,
-} from '@mui/material'
-import {
-  Plus, CaretLeft, CaretRight, MagnifyingGlass, DownloadSimple,
-  Rows, CalendarBlank, PencilSimple, Trash, X, TrendUp, TrendDown, Receipt,
-} from '@phosphor-icons/react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { transactionService } from '@/services/transaction.service'
-import { TransactionForm } from '@/features/transaction/TransactionForm'
-import { getCategoryIcon } from '@/features/transaction/categoryIcons'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CalendarGrid } from '@/features/calendar/CalendarGrid'
 import { DayDetailDrawer } from '@/features/calendar/DayDetailDrawer'
+import { TransactionForm } from '@/features/transaction/TransactionForm'
+import { getCategoryIcon } from '@/features/transaction/categoryIcons'
+import { transactionService } from '@/services/transaction.service'
 import { useToastStore } from '@/stores/toastStore'
-import type { Transaction } from '@/types/transaction'
 import type { TransactionType } from '@/types/category'
+import type { Transaction } from '@/types/transaction'
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Drawer,
+  Fab,
+  IconButton,
+  InputBase,
+  Paper,
+  Skeleton,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material'
+import {
+  CalendarBlank,
+  CaretLeft,
+  CaretRight,
+  DownloadSimple,
+  MagnifyingGlass,
+  PencilSimple,
+  Plus,
+  Receipt,
+  Rows,
+  Trash,
+  X,
+} from '@phosphor-icons/react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 
 // ── 공휴일 ─────────────────────────────────────────────────────────────────
 const KOREAN_HOLIDAYS: Record<string, string> = {
-  '2025-01-01': '신정', '2025-01-28': '설날연휴', '2025-01-29': '설날', '2025-01-30': '설날연휴',
-  '2025-03-01': '삼일절', '2025-05-05': '어린이날', '2025-05-06': '대체공휴일',
-  '2025-06-06': '현충일', '2025-08-15': '광복절', '2025-10-03': '개천절',
-  '2025-10-05': '추석연휴', '2025-10-06': '추석', '2025-10-07': '추석연휴',
-  '2025-10-09': '한글날', '2025-12-25': '성탄절',
-  '2026-01-01': '신정', '2026-02-17': '설날연휴', '2026-02-18': '설날', '2026-02-19': '설날연휴',
-  '2026-03-01': '삼일절', '2026-03-02': '대체공휴일', '2026-05-05': '어린이날',
-  '2026-06-06': '현충일', '2026-08-15': '광복절',
-  '2026-09-24': '추석연휴', '2026-09-25': '추석', '2026-09-26': '추석연휴',
-  '2026-10-03': '개천절', '2026-10-09': '한글날', '2026-12-25': '성탄절',
+  '2025-01-01': '신정',
+  '2025-01-28': '설날연휴',
+  '2025-01-29': '설날',
+  '2025-01-30': '설날연휴',
+  '2025-03-01': '삼일절',
+  '2025-05-05': '어린이날',
+  '2025-05-06': '대체공휴일',
+  '2025-06-06': '현충일',
+  '2025-08-15': '광복절',
+  '2025-10-03': '개천절',
+  '2025-10-05': '추석연휴',
+  '2025-10-06': '추석',
+  '2025-10-07': '추석연휴',
+  '2025-10-09': '한글날',
+  '2025-12-25': '성탄절',
+  '2026-01-01': '신정',
+  '2026-02-17': '설날연휴',
+  '2026-02-18': '설날',
+  '2026-02-19': '설날연휴',
+  '2026-03-01': '삼일절',
+  '2026-03-02': '대체공휴일',
+  '2026-05-05': '어린이날',
+  '2026-06-06': '현충일',
+  '2026-08-15': '광복절',
+  '2026-09-24': '추석연휴',
+  '2026-09-25': '추석',
+  '2026-09-26': '추석연휴',
+  '2026-10-03': '개천절',
+  '2026-10-09': '한글날',
+  '2026-12-25': '성탄절',
 }
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
-const DAY_FULL = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+const DAY_FULL = [
+  '일요일',
+  '월요일',
+  '화요일',
+  '수요일',
+  '목요일',
+  '금요일',
+  '토요일',
+]
 
 function getDateInfo(dateStr: string) {
   const d = new Date(dateStr)
@@ -43,73 +99,150 @@ function getDateInfo(dateStr: string) {
   const dd = String(d.getDate()).padStart(2, '0')
   const holiday = KOREAN_HOLIDAYS[dateStr]
   return {
-    dd, dayShort: DAY_NAMES[dow], dayFull: DAY_FULL[dow],
-    isSat: dow === 6, isSun: dow === 0, holiday,
+    dd,
+    dayShort: DAY_NAMES[dow],
+    dayFull: DAY_FULL[dow],
+    isSat: dow === 6,
+    isSun: dow === 0,
+    holiday,
     isRed: dow === 0 || !!holiday,
   }
 }
 
 // ── 요약 영역 (자산현황과 동일한 디자인 언어) ──────────────────────────────────
 interface SummaryBarProps {
-  year: number; month: number
+  year: number
+  month: number
   summary: { totalIncome: number; totalExpense: number; balance: number }
-  loading: boolean; isCurrentMonth: boolean
-  onPrev: () => void; onNext: () => void
+  loading: boolean
+  isCurrentMonth: boolean
+  onPrev: () => void
+  onNext: () => void
 }
 
-function SummaryBar({ year, month, summary, loading, isCurrentMonth, onPrev, onNext }: SummaryBarProps) {
+function SummaryBar({
+  year,
+  month,
+  summary,
+  loading,
+  isCurrentMonth,
+  onPrev,
+  onNext,
+}: SummaryBarProps) {
   const cards = [
-    { label: '수입', value: summary.totalIncome,       color: 'info.main',    prefix: '' },
-    { label: '지출', value: summary.totalExpense,      color: 'error.main',   prefix: '' },
-    { label: '합계', value: Math.abs(summary.balance), color: summary.balance >= 0 ? 'success.main' : 'error.main', prefix: summary.balance < 0 ? '-' : '' },
+    {
+      label: '수입',
+      value: summary.totalIncome,
+      color: 'info.main',
+      prefix: '',
+    },
+    {
+      label: '지출',
+      value: summary.totalExpense,
+      color: 'error.main',
+      prefix: '',
+    },
+    {
+      label: '합계',
+      value: Math.abs(summary.balance),
+      color: summary.balance >= 0 ? 'success.main' : 'error.main',
+      prefix: summary.balance < 0 ? '-' : '',
+    },
   ]
 
   return (
     <Box sx={{ mb: 2 }}>
       {/* 월 네비게이터 */}
-      <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5} sx={{ mb: 2 }}>
-        <IconButton size="small" onClick={onPrev} sx={{ p: 0.5 }}><CaretLeft size={18} /></IconButton>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ minWidth: 100, textAlign: 'center' }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="center"
+        spacing={0.5}
+        sx={{ mb: 2 }}
+      >
+        <IconButton size="small" onClick={onPrev} sx={{ p: 0.5 }}>
+          <CaretLeft size={18} />
+        </IconButton>
+        <Typography
+          variant="subtitle1"
+          fontWeight={700}
+          sx={{ minWidth: 100, textAlign: 'center' }}
+        >
           {year}년 {month}월
         </Typography>
-        <IconButton size="small" onClick={onNext} disabled={isCurrentMonth} sx={{ p: 0.5 }}>
+        <IconButton
+          size="small"
+          onClick={onNext}
+          disabled={isCurrentMonth}
+          sx={{ p: 0.5 }}
+        >
           <CaretRight size={18} />
         </IconButton>
       </Stack>
 
       {/* 요약 카드 3개 — 자산현황과 동일한 구조 */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: { xs: 1, sm: 1.5 } }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: { xs: 1, sm: 1.5 },
+        }}
+      >
         {loading
-          ? [1, 2, 3].map(i => (
+          ? [1, 2, 3].map((i) => (
               <Card key={i} sx={{ borderRadius: 1 }}>
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <CardContent
+                  sx={{
+                    p: { xs: 1.5, sm: 2 },
+                    '&:last-child': { pb: { xs: 1.5, sm: 2 } },
+                  }}
+                >
                   <Skeleton width="55%" height={14} sx={{ mb: 0.75 }} />
                   <Skeleton width="75%" height={24} />
                 </CardContent>
               </Card>
             ))
           : cards.map(({ label, value, color, prefix }) => (
-              <Card key={label} sx={{ borderRadius: 1 }}>
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Card key={label} sx={{ borderRadius: 2 }}>
+                <CardContent
+                  sx={{
+                    p: { xs: 1.5, sm: 2 },
+                    '&:last-child': { pb: { xs: 1.5, sm: 2 } },
+                  }}
+                >
                   <Typography
-                    variant="caption" color="text.secondary" display="block"
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
                     sx={{ mb: 0.5, fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                   >
                     {label}
                   </Typography>
                   <Typography
-                    fontWeight={800} color={color}
-                    sx={{ fontSize: { xs: '0.8rem', sm: '1rem', md: '1.1rem' }, lineHeight: 1.2 }}
+                    fontWeight={800}
+                    color={color}
+                    sx={{
+                      fontSize: { xs: '0.8rem', sm: '1rem', md: '1.1rem' },
+                      lineHeight: 1.2,
+                    }}
                   >
-                    {prefix}{value.toLocaleString('ko-KR')}
-                    <Typography component="span" variant="caption" color="text.secondary"
-                      sx={{ ml: 0.25, fontSize: { xs: '0.6rem', sm: '0.7rem' } }}
-                    >원</Typography>
+                    {prefix}
+                    {value.toLocaleString('ko-KR')}
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        ml: 0.25,
+                        fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                      }}
+                    >
+                      원
+                    </Typography>
                   </Typography>
                 </CardContent>
               </Card>
-            ))
-        }
+            ))}
       </Box>
     </Box>
   )
@@ -128,8 +261,14 @@ interface FilterBarProps {
 }
 
 function FilterBar({
-  typeFilter, searchQuery, viewMode, totalCount,
-  onTypeChange, onSearchChange, onViewChange, onExcel,
+  typeFilter,
+  searchQuery,
+  viewMode,
+  totalCount,
+  onTypeChange,
+  onSearchChange,
+  onViewChange,
+  onExcel,
 }: FilterBarProps) {
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -142,9 +281,14 @@ function FilterBar({
   return (
     <Box sx={{ mb: 1.5 }}>
       {/* Row 1: 1순위 정보(타입 필터) 좌 / 2순위 보조도구 우 — 명확히 분리 */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 1 }}
+      >
         {/* 타입 필터 칩 — 주요 기능 */}
-        <Stack direction="row" spacing={0.75}>
+        <Stack direction="row" spacing={0.5}>
           {typeChips.map((c) => (
             <Chip
               key={c.value}
@@ -152,28 +296,54 @@ function FilterBar({
               size="small"
               onClick={() => onTypeChange(c.value)}
               variant={typeFilter === c.value ? 'filled' : 'outlined'}
-              color={typeFilter === c.value
-                ? c.value === 'INCOME' ? 'info' : c.value === 'EXPENSE' ? 'error' : 'primary'
-                : 'default'}
-              sx={{ fontWeight: typeFilter === c.value ? 700 : 400, height: 28 }}
+              color={
+                typeFilter === c.value
+                  ? c.value === 'INCOME'
+                    ? 'info'
+                    : c.value === 'EXPENSE'
+                      ? 'error'
+                      : 'primary'
+                  : 'default'
+              }
+              sx={{
+                fontWeight: typeFilter === c.value ? 700 : 400,
+                height: 28,
+              }}
             />
           ))}
         </Stack>
 
         {/* 보조 도구 — 시각적으로 분리, 크기 축소 */}
         <Stack direction="row" alignItems="center" spacing={0.25}>
-          <Typography variant="caption" color="text.disabled" sx={{ mr: 0.75, fontSize: '0.7rem' }}>
+          {/* <Typography
+            variant="caption"
+            color="text.disabled"
+            sx={{ mr: 0.75, fontSize: '0.7rem' }}
+          >
             {totalCount}건
-          </Typography>
+          </Typography> */}
 
           {/* 데스크톱 전용 검색 — 모바일은 FAB으로 대체 */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+          {/* <Box
+            sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}
+          >
             {searchOpen ? (
-              <Paper sx={{
-                display: 'flex', alignItems: 'center', px: 1, height: 30,
-                border: '1px solid', borderColor: 'primary.main', borderRadius: 1.5, boxShadow: 'none',
-              }}>
-                <MagnifyingGlass size={13} style={{ flexShrink: 0, color: '#999' }} />
+              <Paper
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 1,
+                  height: 30,
+                  border: '1px solid',
+                  borderColor: 'primary.main',
+                  borderRadius: 1.5,
+                  boxShadow: 'none',
+                }}
+              >
+                <MagnifyingGlass
+                  size={13}
+                  style={{ flexShrink: 0, color: '#999' }}
+                />
                 <InputBase
                   autoFocus
                   value={searchQuery}
@@ -181,34 +351,57 @@ function FilterBar({
                   placeholder="검색..."
                   sx={{ ml: 0.75, fontSize: '0.78rem', width: 90 }}
                 />
-                <IconButton size="small" sx={{ p: 0.25 }} onClick={() => { onSearchChange(''); setSearchOpen(false) }}>
+                <IconButton
+                  size="small"
+                  sx={{ p: 0.25 }}
+                  onClick={() => {
+                    onSearchChange('')
+                    setSearchOpen(false)
+                  }}
+                >
                   <X size={11} />
                 </IconButton>
               </Paper>
             ) : (
               <Tooltip title="검색">
-                <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ p: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => setSearchOpen(true)}
+                  sx={{ p: 0.5 }}
+                >
                   <MagnifyingGlass size={15} />
                 </IconButton>
               </Tooltip>
             )}
-          </Box>
+          </Box> */}
 
           <Tooltip title="엑셀 다운로드">
             <span>
-              <IconButton size="small" onClick={onExcel} disabled={totalCount === 0} sx={{ p: 0.5 }}>
-                <DownloadSimple size={15} />
+              <IconButton
+                onClick={onExcel}
+                disabled={totalCount === 0}
+                sx={{ p: 0.75 }}
+              >
+                <DownloadSimple size={17} />
               </IconButton>
             </span>
           </Tooltip>
 
-          <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && onViewChange(v)} size="small">
-            <ToggleButton value="list" sx={{ px: 0.75, py: 0.25 }}><Rows size={13} /></ToggleButton>
-            <ToggleButton value="calendar" sx={{ px: 0.75, py: 0.25 }}><CalendarBlank size={13} /></ToggleButton>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, v) => v && onViewChange(v)}
+            size="small"
+          >
+            <ToggleButton value="list" sx={{ px: 1, py: 0.75 }}>
+              <Rows size={15} />
+            </ToggleButton>
+            <ToggleButton value="calendar" sx={{ px: 1, py: 0.75 }}>
+              <CalendarBlank size={15} />
+            </ToggleButton>
           </ToggleButtonGroup>
         </Stack>
       </Stack>
-
     </Box>
   )
 }
@@ -221,19 +414,31 @@ interface TxnRowProps {
   onEdit: () => void
   onDelete: () => void
   isDesktop: boolean
+  onClick: () => void
 }
 
-function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnRowProps) {
+function TxnRow({
+  txn,
+  isSelected,
+  onSelect,
+  onEdit,
+  onDelete,
+  isDesktop,
+  onClick,
+}: TxnRowProps) {
   const CatIcon = getCategoryIcon(txn.categoryName ?? '')
   const iconColor = txn.type === 'INCOME' ? '#0277bd' : '#c62828'
   const avatarBg = txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'
 
   return (
     <Box
-      onClick={onSelect}
+      onClick={onClick}
       sx={{
-        display: 'flex', alignItems: 'center', gap: 1.5,
-        px: { xs: 2, sm: 2.5 }, py: { xs: 0.9, sm: 1 },
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        px: { xs: 2, sm: 2.5 },
+        py: { xs: 0.9, sm: 1 },
         cursor: 'pointer',
         bgcolor: isSelected ? 'action.selected' : 'background.paper',
         transition: 'background-color 0.12s',
@@ -246,75 +451,179 @@ function TxnRow({ txn, isSelected, onSelect, onEdit, onDelete, isDesktop }: TxnR
       </Avatar>
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography variant="body2" fontWeight={600} noWrap sx={{ lineHeight: 1.3 }}>
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          noWrap
+          sx={{ lineHeight: 1.3 }}
+        >
           {txn.categoryName}
         </Typography>
         {txn.memo && (
-          <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ lineHeight: 1.3 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            display="block"
+            sx={{ lineHeight: 1.3 }}
+          >
             {txn.memo}
           </Typography>
         )}
       </Box>
 
       <Typography
-        variant="body2" fontWeight={700} flexShrink={0} noWrap
+        variant="body2"
+        fontWeight={700}
+        flexShrink={0}
+        noWrap
         color={txn.type === 'INCOME' ? 'info.main' : 'error.main'}
       >
         {txn.amount.toLocaleString('ko-KR')}원
       </Typography>
 
       {/* 데스크톱 hover 액션 */}
-      {isDesktop && (
-        <Stack direction="row" className="txn-actions" sx={{ opacity: 0, transition: 'opacity 0.15s', flexShrink: 0 }}>
+      {/* {isDesktop && (
+        <Stack
+          direction="row"
+          className="txn-actions"
+          sx={{ opacity: 0, transition: 'opacity 0.15s', flexShrink: 0 }}
+        >
           <Tooltip title="수정">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onEdit() }} sx={{ p: 0.4 }}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit()
+              }}
+              sx={{ p: 0.4 }}
+            >
               <PencilSimple size={13} />
             </IconButton>
           </Tooltip>
           <Tooltip title="삭제">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onDelete() }}
-              sx={{ p: 0.4, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete()
+              }}
+              sx={{
+                p: 0.4,
+                color: 'text.disabled',
+                '&:hover': { color: 'error.main' },
+              }}
+            >
               <Trash size={13} />
             </IconButton>
           </Tooltip>
         </Stack>
-      )}
+      )} */}
     </Box>
   )
 }
 
 // ── 날짜 그룹 헤더 ──────────────────────────────────────────────────────────
-function DateHeader({ dateKey, txns }: { dateKey: string; txns: Transaction[] }) {
+function DateHeader({
+  dateKey,
+  txns,
+}: {
+  dateKey: string
+  txns: Transaction[]
+}) {
   const { dd, dayFull, isSat, isSun, holiday } = getDateInfo(dateKey)
-  const dayIncome = txns.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
-  const dayExpense = txns.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+  const dayIncome = txns
+    .filter((t) => t.type === 'INCOME')
+    .reduce((s, t) => s + t.amount, 0)
+  const dayExpense = txns
+    .filter((t) => t.type === 'EXPENSE')
+    .reduce((s, t) => s + t.amount, 0)
 
   // 토요일+공휴일이면 빨간색, 토요일만이면 파란색, 일요일/공휴일이면 빨간색
   const showSatBadge = isSat && !holiday
   const showRedBadge = isSun || !!holiday
-  const dateColor = showRedBadge ? 'error.main' : showSatBadge ? 'info.main' : 'text.primary'
+  const dateColor = showRedBadge
+    ? 'error.main'
+    : showSatBadge
+      ? 'info.main'
+      : 'text.primary'
 
   return (
     <Box
       sx={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        px: { xs: 2, sm: 2.5 }, py: 0.75,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        px: { xs: 2, sm: 2.5 },
+        py: 0.75,
         bgcolor: 'grey.50',
-        borderBottom: '1px solid', borderColor: 'divider',
-        position: 'sticky', top: 0, zIndex: 1,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1,
       }}
     >
       <Stack direction="row" alignItems="center" spacing={0.75}>
-        <Typography fontWeight={800} color={dateColor} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, lineHeight: 1 }}>
+        <Typography
+          fontWeight={800}
+          color={dateColor}
+          sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, lineHeight: 1 }}
+        >
           {dd}
         </Typography>
-        <Typography variant="caption" color="text.secondary">{dayFull}</Typography>
-        {showSatBadge && <Chip label="토" size="small" sx={{ height: 16, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#e1f5fe', color: '#0277bd', px: 0 }} />}
-        {showRedBadge && <Chip label={holiday ?? '일'} size="small" sx={{ height: 16, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#ffebee', color: '#c62828', px: 0 }} />}
+        <Typography
+          variant="caption"
+          color={
+            showSatBadge
+              ? '#0277bd'
+              : showRedBadge
+                ? '#c62828'
+                : 'text.secondary'
+          }
+        >
+          {dayFull}
+        </Typography>
+        {/* {showSatBadge && (
+          <Chip
+            label="토"
+            size="small"
+            sx={{
+              height: 16,
+              fontSize: '0.6rem',
+              fontWeight: 700,
+              bgcolor: '#e1f5fe',
+              color: '#0277bd',
+              px: 0,
+            }}
+          />
+        )} */}
+        {/* {showRedBadge && (
+          <Chip
+            label={holiday ?? '일'}
+            size="small"
+            sx={{
+              height: 16,
+              fontSize: '0.6rem',
+              fontWeight: 700,
+              bgcolor: '#ffebee',
+              color: '#c62828',
+              px: 0,
+            }}
+          />
+        )} */}
       </Stack>
       <Stack direction="row" spacing={1.5} alignItems="center">
-        {dayIncome > 0 && <Typography variant="caption" fontWeight={700} color="info.main">{dayIncome.toLocaleString('ko-KR')}</Typography>}
-        {dayExpense > 0 && <Typography variant="caption" fontWeight={700} color="error.main">{dayExpense.toLocaleString('ko-KR')}</Typography>}
+        {dayIncome > 0 && (
+          <Typography variant="caption" fontWeight={700} color="info.main">
+            {dayIncome.toLocaleString('ko-KR')}원
+          </Typography>
+        )}
+        {dayExpense > 0 && (
+          <Typography variant="caption" fontWeight={700} color="error.main">
+            {dayExpense.toLocaleString('ko-KR')}원
+          </Typography>
+        )}
       </Stack>
     </Box>
   )
@@ -330,21 +639,40 @@ interface DetailPanelProps {
   isDrawer?: boolean
 }
 
-function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }: DetailPanelProps) {
+function DetailPanel({
+  txn,
+  onEdit,
+  onDelete,
+  onAdd,
+  onClose,
+  isDrawer = false,
+}: DetailPanelProps) {
   if (!txn) {
     return (
       <Box
         sx={{
-          height: '100%', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 2, p: 4,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+          p: 4,
           color: 'text.disabled',
         }}
       >
         <Receipt size={48} />
         <Typography variant="body2" color="text.secondary" textAlign="center">
-          거래를 선택하면<br />상세 정보를 확인할 수 있어요
+          거래를 선택하면
+          <br />
+          상세 정보를 확인할 수 있어요
         </Typography>
-        <Button variant="outlined" size="small" startIcon={<Plus size={14} />} onClick={onAdd}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<Plus size={14} />}
+          onClick={onAdd}
+        >
           거래 추가
         </Button>
       </Box>
@@ -355,29 +683,53 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
   const { dd, dayFull } = getDateInfo(txn.txnDate)
   const d = new Date(txn.txnDate)
 
+  const CatIcon = getCategoryIcon(txn.categoryName ?? '')
+  const iconColor = txn.type === 'INCOME' ? '#0277bd' : '#c62828'
+  const avatarBg = txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'
+
   return (
-    <Box sx={{ p: { xs: 3, sm: 3 }, ...(isDrawer ? { flex: 1, minHeight: 0, overflowY: 'auto', pb: 'calc(env(safe-area-inset-bottom) + 24px)' } : { height: '100%', overflowY: 'auto' }) }}>
+    <Box
+      sx={{
+        p: { xs: 3, sm: 3 },
+        ...(isDrawer
+          ? {
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              pb: 'calc(env(safe-area-inset-bottom) + 24px)',
+            }
+          : { height: '100%', overflowY: 'auto' }),
+      }}
+    >
       {isDrawer && onClose && (
         <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
-          <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
+          <IconButton size="small" onClick={onClose}>
+            <X size={18} />
+          </IconButton>
         </Stack>
       )}
 
       {/* 타입 + 카테고리 */}
       <Stack alignItems="center" spacing={1.5} sx={{ mb: 3 }}>
-        <Box
+        <Avatar
           sx={{
-            width: 64, height: 64, borderRadius: 3,
-            bgcolor: txn.categoryColor ?? (isIncome ? '#e1f5fe' : '#ffebee'),
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 64,
+            height: 64,
+            borderRadius: 3,
+            bgcolor: avatarBg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {isIncome
-            ? <TrendUp size={32} color="#0277bd" />
-            : <TrendDown size={32} color="#c62828" />}
-        </Box>
+          <CatIcon size={30} color={iconColor} weight="fill" />
+        </Avatar>
         <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h5" fontWeight={800} color={isIncome ? 'info.main' : 'error.main'}>
+          <Typography
+            variant="h5"
+            fontWeight={800}
+            color={isIncome ? 'info.main' : 'error.main'}
+          >
             {txn.amount.toLocaleString('ko-KR')}원
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
@@ -390,8 +742,15 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
 
       {/* 상세 정보 */}
       <Stack spacing={2} sx={{ mb: 3 }}>
-        <DetailRow label="날짜" value={`${d.getFullYear()}년 ${d.getMonth() + 1}월 ${dd}일 ${dayFull}`} />
-        <DetailRow label="유형" value={isIncome ? '수입' : '지출'} valueColor={isIncome ? 'info.main' : 'error.main'} />
+        <DetailRow
+          label="날짜"
+          value={`${d.getFullYear()}년 ${d.getMonth() + 1}월 ${dd}일 ${dayFull}`}
+        />
+        <DetailRow
+          label="유형"
+          value={isIncome ? '수입' : '지출'}
+          valueColor={isIncome ? 'info.main' : 'error.main'}
+        />
         <DetailRow label="분류" value={txn.categoryName ?? '-'} />
         {txn.memo && <DetailRow label="내용" value={txn.memo} />}
       </Stack>
@@ -399,14 +758,19 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
       {/* 액션 버튼 */}
       <Stack direction="row" spacing={1.5}>
         <Button
-          variant="outlined" size="medium" fullWidth
+          variant="outlined"
+          size="medium"
+          fullWidth
           startIcon={<PencilSimple size={16} />}
           onClick={onEdit}
         >
           수정
         </Button>
         <Button
-          variant="outlined" size="medium" fullWidth color="error"
+          variant="outlined"
+          size="medium"
+          fullWidth
+          color="error"
           startIcon={<Trash size={16} />}
           onClick={onDelete}
         >
@@ -417,11 +781,34 @@ function DetailPanel({ txn, onEdit, onDelete, onAdd, onClose, isDrawer = false }
   )
 }
 
-function DetailRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+function DetailRow({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string
+  value: string
+  valueColor?: string
+}) {
   return (
-    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 56, mt: 0.2 }}>{label}</Typography>
-      <Typography variant="body2" fontWeight={500} color={valueColor ?? 'text.primary'} sx={{ textAlign: 'right', flex: 1, ml: 2 }}>
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      alignItems="flex-start"
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ minWidth: 56, mt: 0.2 }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        fontWeight={500}
+        color={valueColor ?? 'text.primary'}
+        sx={{ textAlign: 'right', flex: 1, ml: 2 }}
+      >
         {value}
       </Typography>
     </Stack>
@@ -433,12 +820,30 @@ function ListSkeleton() {
   return (
     <Box>
       {[1, 2, 3].map((g) => (
-        <Box key={g} sx={{ mb: 1.5, borderRadius: 1, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}>
+        <Box
+          key={g}
+          sx={{
+            mb: 1.5,
+            borderRadius: 1,
+            overflow: 'hidden',
+            border: '2px solid',
+            borderColor: 'divider',
+          }}
+        >
           <Box sx={{ px: 2.5, py: 0.75, bgcolor: 'grey.50' }}>
             <Skeleton width={80} height={20} />
           </Box>
           {[1, 2].map((i) => (
-            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2.5, py: 1 }}>
+            <Box
+              key={i}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                px: 2.5,
+                py: 1,
+              }}
+            >
               <Skeleton variant="circular" width={30} height={30} />
               <Box sx={{ flex: 1 }}>
                 <Skeleton width="50%" height={16} />
@@ -474,10 +879,11 @@ export default function TransactionsPage() {
   const showToast = useToastStore((s) => s.show)
   const queryClientInstance = useQueryClient()
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))      // < 900px
-  const isTabletUp = useMediaQuery(theme.breakpoints.up('md'))      // ≥ 900px
+  const isMobile = useMediaQuery(theme.breakpoints.down('md')) // < 900px
+  const isTabletUp = useMediaQuery(theme.breakpoints.up('md')) // ≥ 900px
 
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1
 
   // 페이지 진입 시 최상단으로 — useLayoutEffect로 페인트 전 동기 실행
   useLayoutEffect(() => {
@@ -485,7 +891,11 @@ export default function TransactionsPage() {
     document.documentElement.scrollTop = 0
   }, [])
 
-  const { data: txnRes, isLoading, isError } = useQuery({
+  const {
+    data: txnRes,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['transactions', year, month],
     queryFn: () => transactionService.getList({ year, month, size: 500 }),
   })
@@ -494,22 +904,29 @@ export default function TransactionsPage() {
   const { mutate: deleteTxn, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => transactionService.remove(id),
     onSuccess: () => {
-      queryClientInstance.invalidateQueries({ queryKey: ['transactions', year, month] })
+      queryClientInstance.invalidateQueries({
+        queryKey: ['transactions', year, month],
+      })
       queryClientInstance.invalidateQueries({ queryKey: ['assets'] })
       showToast('거래내역이 삭제되었습니다.', 'success')
       setDeleteTarget(null)
-      if (selectedTxn?.id === deleteTarget) { setSelectedTxn(null); setMobileDrawerOpen(false) }
+      if (selectedTxn?.id === deleteTarget) {
+        setSelectedTxn(null)
+        setMobileDrawerOpen(false)
+      }
     },
     onError: () => showToast('삭제에 실패했습니다.', 'error'),
   })
 
   const filtered = useMemo(() => {
     let list = allTransactions
-    if (typeFilter !== 'ALL') list = list.filter(t => t.type === typeFilter)
+    if (typeFilter !== 'ALL') list = list.filter((t) => t.type === typeFilter)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
-      list = list.filter(t =>
-        t.categoryName?.toLowerCase().includes(q) || t.memo?.toLowerCase().includes(q)
+      list = list.filter(
+        (t) =>
+          t.categoryName?.toLowerCase().includes(q) ||
+          t.memo?.toLowerCase().includes(q)
       )
     }
     return list
@@ -527,31 +944,60 @@ export default function TransactionsPage() {
   const summary = transactionService.getSummary(allTransactions)
 
   const prevMonth = () => {
-    if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1)
-    setSelectedTxn(null); window.scrollTo(0, 0)
+    if (month === 1) {
+      setYear((y) => y - 1)
+      setMonth(12)
+    } else setMonth((m) => m - 1)
+    setSelectedTxn(null)
+    window.scrollTo(0, 0)
   }
   const nextMonth = () => {
-    if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1)
-    setSelectedTxn(null); window.scrollTo(0, 0)
+    if (month === 12) {
+      setYear((y) => y + 1)
+      setMonth(1)
+    } else setMonth((m) => m + 1)
+    setSelectedTxn(null)
+    window.scrollTo(0, 0)
   }
 
-  const handleTypeChange = (v: 'ALL' | TransactionType) => { setTypeFilter(v) }
+  const handleTypeChange = (v: 'ALL' | TransactionType) => {
+    setTypeFilter(v)
+  }
   const handleSelectTxn = (txn: Transaction) => {
     setSelectedTxn(txn)
     if (isMobile) setMobileDrawerOpen(true)
   }
-  const handleEditClick = (txn: Transaction) => { setEditTarget(txn); setFormOpen(true); setMobileDrawerOpen(false) }
-  const handleFormClose = () => { setFormOpen(false); setEditTarget(null) }
-  const handleAddClick = () => { setEditTarget(null); setFormOpen(true); setMobileDrawerOpen(false) }
+  const handleEditClick = (txn: Transaction) => {
+    setEditTarget(txn)
+    setFormOpen(true)
+    setMobileDrawerOpen(false)
+  }
+  const handleFormClose = () => {
+    setFormOpen(false)
+    setEditTarget(null)
+  }
+  const handleAddClick = () => {
+    setEditTarget(null)
+    setFormOpen(true)
+    setMobileDrawerOpen(false)
+  }
 
   const handleExcel = () => {
-    const rows = filtered.map(t => ({
-      날짜: t.txnDate, 유형: t.type === 'INCOME' ? '수입' : '지출',
-      카테고리: t.categoryName ?? '', 내용: t.memo ?? '',
+    const rows = filtered.map((t) => ({
+      날짜: t.txnDate,
+      유형: t.type === 'INCOME' ? '수입' : '지출',
+      카테고리: t.categoryName ?? '',
+      내용: t.memo ?? '',
       금액: t.type === 'INCOME' ? t.amount : -t.amount,
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
-    ws['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 14 }, { wch: 30 }, { wch: 14 }]
+    ws['!cols'] = [
+      { wch: 12 },
+      { wch: 8 },
+      { wch: 14 },
+      { wch: 30 },
+      { wch: 14 },
+    ]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, '거래내역')
     XLSX.writeFile(wb, `거래내역_${year}년${month}월.xlsx`)
@@ -560,11 +1006,22 @@ export default function TransactionsPage() {
   // ── 리스트 영역 ──────────────────────────────────────────────────────────
   const listContent = (
     <>
-      {isLoading ? <ListSkeleton /> : filtered.length === 0 ? (
+      {isLoading ? (
+        <ListSkeleton />
+      ) : filtered.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
-          <Receipt size={40} style={{ opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
+          <Receipt
+            size={40}
+            style={{ opacity: 0.3, display: 'block', margin: '0 auto 12px' }}
+          />
           <Typography variant="body2">조건에 맞는 거래내역이 없어요</Typography>
-          <Button size="small" variant="outlined" sx={{ mt: 2 }} onClick={handleAddClick} startIcon={<Plus size={14} />}>
+          <Button
+            size="small"
+            variant="outlined"
+            sx={{ mt: 2 }}
+            onClick={handleAddClick}
+            startIcon={<Plus size={14} />}
+          >
             거래 추가
           </Button>
         </Box>
@@ -573,7 +1030,12 @@ export default function TransactionsPage() {
           {groupedByDate.map(([dateKey, txns]) => (
             <Box
               key={dateKey}
-              sx={{ borderRadius: 1, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}
+              sx={{
+                borderRadius: 2,
+                overflow: 'hidden',
+                border: '2px solid',
+                borderColor: 'divider',
+              }}
             >
               <DateHeader dateKey={dateKey} txns={txns} />
               {txns.map((txn, idx) => (
@@ -586,6 +1048,7 @@ export default function TransactionsPage() {
                     onEdit={() => handleEditClick(txn)}
                     onDelete={() => setDeleteTarget(txn.id)}
                     isDesktop={isTabletUp}
+                    onClick={() => handleEditClick(txn)}
                   />
                 </Box>
               ))}
@@ -599,16 +1062,37 @@ export default function TransactionsPage() {
   // ── 달력 뷰 ──────────────────────────────────────────────────────────────
   const calendarContent = (
     <>
-      <Box sx={{ borderRadius: 1, overflow: 'hidden', border: '2px solid', borderColor: 'divider' }}>
-        {isLoading ? <Box sx={{ p: 2 }}><Skeleton height={300} /></Box> : (
+      <Box
+        sx={{
+          borderRadius: 1,
+          overflow: 'hidden',
+          border: '2px solid',
+          borderColor: 'divider',
+        }}
+      >
+        {isLoading ? (
+          <Box sx={{ p: 2 }}>
+            <Skeleton height={300} />
+          </Box>
+        ) : (
           <CalendarGrid
-            year={year} month={month} transactions={allTransactions}
+            year={year}
+            month={month}
+            transactions={allTransactions}
             selectedDate={calSelectedDate}
-            onSelectDate={(d) => { setCalSelectedDate(d); setCalDrawerOpen(true) }}
+            onSelectDate={(d) => {
+              setCalSelectedDate(d)
+              setCalDrawerOpen(true)
+            }}
           />
         )}
       </Box>
-      <DayDetailDrawer open={calDrawerOpen} onClose={() => setCalDrawerOpen(false)} dateKey={calSelectedDate} transactions={allTransactions} />
+      <DayDetailDrawer
+        open={calDrawerOpen}
+        onClose={() => setCalDrawerOpen(false)}
+        dateKey={calSelectedDate}
+        transactions={allTransactions}
+      />
     </>
   )
 
@@ -616,28 +1100,45 @@ export default function TransactionsPage() {
     <Box>
       {/* ── 요약 바 ── */}
       <SummaryBar
-        year={year} month={month} summary={summary} loading={isLoading}
+        year={year}
+        month={month}
+        summary={summary}
+        loading={isLoading}
         isCurrentMonth={isCurrentMonth}
-        onPrev={prevMonth} onNext={nextMonth}
+        onPrev={prevMonth}
+        onNext={nextMonth}
       />
 
       {/* ── 모바일 검색 바 (FAB 클릭 시 표시) ── */}
-      {isMobile && mobileSearchOpen && (
-        <Paper elevation={0} sx={{
-          display: 'flex', alignItems: 'center',
-          px: 1.5, py: 0.5, mb: 1.5,
-          border: '1px solid', borderColor: 'primary.main',
-          borderRadius: 2,
-        }}>
+      {mobileSearchOpen && (
+        <Paper
+          elevation={0}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            px: 1.5,
+            py: 0.5,
+            mb: 1.5,
+            border: '1px solid',
+            borderColor: 'primary.main',
+            borderRadius: 2,
+          }}
+        >
           <MagnifyingGlass size={18} color="#999" style={{ flexShrink: 0 }} />
           <InputBase
             autoFocus
-            placeholder="카테고리, 내용 검색..."
+            placeholder="어떤 거래를 찾으시나요?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flex: 1, mx: 1, '& input': { fontSize: '16px' } }}
+            sx={{ flex: 1, mx: 1, '& input': { fontSize: '14px' } }}
           />
-          <IconButton size="small" onClick={() => { setMobileSearchOpen(false); setSearchQuery('') }}>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setMobileSearchOpen(false)
+              setSearchQuery('')
+            }}
+          >
             <X size={16} />
           </IconButton>
         </Paper>
@@ -646,7 +1147,8 @@ export default function TransactionsPage() {
       {/* ── 필터 바 ── */}
       <FilterBar
         typeFilter={typeFilter}
-        searchQuery={searchQuery} viewMode={viewMode}
+        searchQuery={searchQuery}
+        viewMode={viewMode}
         totalCount={filtered.length}
         onTypeChange={handleTypeChange}
         onSearchChange={setSearchQuery}
@@ -654,7 +1156,11 @@ export default function TransactionsPage() {
         onExcel={handleExcel}
       />
 
-      {isError && <Alert severity="error" sx={{ mb: 2 }}>데이터를 불러오는 중 오류가 발생했습니다.</Alert>}
+      {isError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          데이터를 불러오는 중 오류가 발생했습니다.
+        </Alert>
+      )}
 
       {/* ── 콘텐츠 레이아웃 ── */}
       {viewMode === 'calendar' ? (
@@ -663,17 +1169,28 @@ export default function TransactionsPage() {
         /* 태블릿/PC: 좌 목록 + 우 상세 */
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
           {/* 좌: 거래 목록 */}
-          <Box sx={{ flex: '0 0 auto', width: { md: '45%', lg: '420px' }, minWidth: 0 }}>
+          <Box
+            sx={{
+              flex: '0 0 auto',
+              width: { md: '100%', lg: '100%' },
+              minWidth: 0,
+            }}
+          >
             {listContent}
           </Box>
 
           {/* 우: 상세 패널 (sticky) */}
-          <Box
+          {/* <Box
             sx={{
-              flex: 1, minWidth: 0,
-              position: 'sticky', top: 80,
-              maxHeight: 'calc(100dvh - 100px)', overflowY: 'auto',
-              borderRadius: 1, border: '1px solid', borderColor: 'divider',
+              flex: 1,
+              minWidth: 0,
+              position: 'sticky',
+              top: 80,
+              maxHeight: 'calc(100dvh - 100px)',
+              overflowY: 'auto',
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'divider',
               bgcolor: 'background.paper',
             }}
           >
@@ -683,7 +1200,7 @@ export default function TransactionsPage() {
               onDelete={() => selectedTxn && setDeleteTarget(selectedTxn.id)}
               onAdd={handleAddClick}
             />
-          </Box>
+          </Box> */}
         </Box>
       ) : (
         /* 모바일: 단일 컬럼 */
@@ -704,14 +1221,28 @@ export default function TransactionsPage() {
             flexDirection: 'column',
             overflow: 'hidden',
             pb: 'env(safe-area-inset-bottom)',
-          }
+          },
         }}
       >
-        <Box sx={{ width: 40, height: 4, bgcolor: 'grey.300', borderRadius: 2, mx: 'auto', mt: 1.5, mb: 0, flexShrink: 0 }} />
+        <Box
+          sx={{
+            width: 40,
+            height: 4,
+            bgcolor: 'grey.300',
+            borderRadius: 2,
+            mx: 'auto',
+            mt: 1.5,
+            mb: 0,
+            flexShrink: 0,
+          }}
+        />
         <DetailPanel
           txn={selectedTxn}
           onEdit={() => selectedTxn && handleEditClick(selectedTxn)}
-          onDelete={() => { selectedTxn && setDeleteTarget(selectedTxn.id); setMobileDrawerOpen(false) }}
+          onDelete={() => {
+            selectedTxn && setDeleteTarget(selectedTxn.id)
+            setMobileDrawerOpen(false)
+          }}
           onAdd={handleAddClick}
           onClose={() => setMobileDrawerOpen(false)}
           isDrawer
@@ -719,32 +1250,49 @@ export default function TransactionsPage() {
       </Drawer>
 
       {/* 모바일 FAB — 검색(왼쪽) + 추가(오른쪽) */}
-      {isMobile && (
-        <>
-          {/* 검색 FAB */}
-          <Fab
-            onClick={() => setMobileSearchOpen(v => !v)}
-            sx={{
-              position: 'fixed', bottom: 80, right: 84, zIndex: 10,
-              bgcolor: mobileSearchOpen ? 'primary.main' : 'background.paper',
-              color: mobileSearchOpen ? '#fff' : 'text.secondary',
-              boxShadow: 2,
-              '&:hover': { bgcolor: mobileSearchOpen ? 'primary.dark' : 'grey.100' },
-            }}
-          >
-            <MagnifyingGlass size={22} />
-          </Fab>
-          {/* 추가 FAB */}
-          <Fab color="primary" onClick={handleAddClick} sx={{ position: 'fixed', bottom: 80, right: 20, zIndex: 10 }}>
-            <Plus weight="bold" size={24} />
-          </Fab>
-        </>
-      )}
+      {/* {isMobile && ( */}
+      <>
+        {/* 검색 FAB */}
+        <Fab
+          onClick={() => setMobileSearchOpen((v) => !v)}
+          sx={{
+            position: 'fixed',
+            bottom: isMobile ? 80 : 30,
+            right: 84,
+            zIndex: 10,
+            bgcolor: mobileSearchOpen ? 'primary.main' : 'background.paper',
+            color: mobileSearchOpen ? '#fff' : 'text.secondary',
+            boxShadow: 2,
+            '&:hover': {
+              bgcolor: mobileSearchOpen ? 'primary.dark' : 'grey.100',
+            },
+          }}
+        >
+          <MagnifyingGlass size={22} />
+        </Fab>
+        {/* 추가 FAB */}
+        <Fab
+          color="primary"
+          onClick={handleAddClick}
+          sx={{
+            position: 'fixed',
+            bottom: isMobile ? 80 : 30,
+            right: 20,
+            zIndex: 10,
+          }}
+        >
+          <Plus weight="bold" size={24} />
+        </Fab>
+      </>
+      {/* )} */}
 
       <TransactionForm
         key={`${editTarget?.id ?? 'new'}-${formOpen}`}
-        open={formOpen} onClose={handleFormClose}
-        defaultYear={year} defaultMonth={month} editTarget={editTarget}
+        open={formOpen}
+        onClose={handleFormClose}
+        defaultYear={year}
+        defaultMonth={month}
+        editTarget={editTarget}
       />
 
       <ConfirmDialog

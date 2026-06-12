@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Box,
   Card,
@@ -26,35 +26,46 @@ import type { LoginRequest } from '@/types/auth'
 import NextLink from 'next/link'
 import { SocialLoginButtons } from './SocialLoginButtons'
 
-const SAVED_EMAIL_KEY = 'savedEmail'
-const LAST_LOGIN_KEY = 'lastLoginMethod'
+// ── 쿠키 헬퍼 (비민감 UI 상태 전용 — 이메일/플래그만, 토큰 저장 금지) ──
+const COOKIE_EMAIL = 'saved_email'
+const COOKIE_LAST_METHOD = 'last_login_method'
 
-export function LoginForm() {
+function setCookie(name: string, value: string, days = 30) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString()
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
+}
+function removeCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+}
+
+// ── Props (서버 컴포넌트 page.tsx 에서 쿠키 읽어 주입) ──
+interface LoginFormProps {
+  initialEmail: string
+  initialLastMethod: string | null
+}
+
+export function LoginForm({ initialEmail, initialLastMethod }: LoginFormProps) {
   const router = useRouter()
   const { setAuth, setUser } = useAuthStore()
   const [showPw, setShowPw] = useState(false)
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [rememberEmail, setRememberEmail] = useState(false)
+
+  // 서버에서 이미 올바른 초기값 → SSR/클라이언트 동일 → hydration flicker 없음
+  const [rememberEmail, setRememberEmail] = useState(!!initialEmail)
   const [autoLogin, setAutoLogin] = useState(true)
-  const [lastLoginMethod, setLastLoginMethod] = useState<string | null>(null)
+  const [lastLoginMethod, setLastLoginMethod] = useState<string | null>(
+    initialLastMethod
+  )
+
+  // MUI InputLabel shrink 제어 — emailValue 추적 (watch 미사용: React Compiler 호환)
+  const [emailValue, setEmailValue] = useState(initialEmail)
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
-  } = useForm<LoginRequest>()
-
-  // 저장된 이메일 + 마지막 로그인 방법 불러오기
-  useEffect(() => {
-    const saved = localStorage.getItem(SAVED_EMAIL_KEY)
-    if (saved) {
-      setValue('email', saved)
-      setRememberEmail(true)
-    }
-    setLastLoginMethod(localStorage.getItem(LAST_LOGIN_KEY))
-  }, [setValue])
+  } = useForm<LoginRequest>({ defaultValues: { email: initialEmail } })
 
   const onSubmit = async (data: LoginRequest) => {
     setLoading(true)
@@ -62,14 +73,15 @@ export function LoginForm() {
     try {
       const res = await authService.login(data)
       if (res.success) {
-        // 아이디 저장 처리
+        // 아이디 저장 → 쿠키 (SSR 읽기 가능, hydration-safe)
         if (rememberEmail) {
-          localStorage.setItem(SAVED_EMAIL_KEY, data.email)
+          setCookie(COOKIE_EMAIL, data.email, 30)
         } else {
-          localStorage.removeItem(SAVED_EMAIL_KEY)
+          removeCookie(COOKIE_EMAIL)
         }
-        // 최근 로그인 방법 저장
-        localStorage.setItem(LAST_LOGIN_KEY, 'email')
+        // 마지막 로그인 방법 기록
+        setCookie(COOKIE_LAST_METHOD, 'email', 90)
+        setLastLoginMethod('email')
 
         setAuth(
           {
@@ -120,7 +132,7 @@ export function LoginForm() {
         sx={{
           maxWidth: 420,
           width: '100%',
-          borderRadius: 1,
+          borderRadius: 2,
           p: { xs: 2, sm: 4 },
         }}
       >
@@ -149,12 +161,17 @@ export function LoginForm() {
               sx={{ mb: 2 }}
               error={!!errors.email}
               helperText={errors.email?.message}
+              // controlled: SSR에 value 렌더 → input 깜빡임 방지
+              // onChange는 register 옵션으로만 — prop 중복 방지
+              value={emailValue}
+              slotProps={{ inputLabel: { shrink: !!emailValue } }}
               {...register('email', {
                 required: '이메일을 입력해주세요.',
                 pattern: {
                   value: /\S+@\S+\.\S+/,
                   message: '올바른 이메일 형식이 아닙니다.',
                 },
+                onChange: (e) => setEmailValue(e.target.value),
               })}
             />
 
@@ -169,7 +186,11 @@ export function LoginForm() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowPw((v) => !v)} edge="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowPw((v) => !v)}
+                      edge="end"
+                    >
                       {showPw ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </IconButton>
                   </InputAdornment>
@@ -177,12 +198,19 @@ export function LoginForm() {
               }}
               {...register('password', {
                 required: '비밀번호를 입력해주세요.',
-                minLength: { value: 6, message: '비밀번호는 6자 이상이어야 합니다.' },
+                minLength: {
+                  value: 6,
+                  message: '비밀번호는 6자 이상이어야 합니다.',
+                },
               })}
             />
 
             {/* 아이디 저장 + 자동 로그인 */}
-            <Stack direction="row" justifyContent="space-between" sx={{ mb: 2.5 }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              sx={{ mb: 2.5 }}
+            >
               <FormControlLabel
                 control={
                   <Checkbox
@@ -215,7 +243,11 @@ export function LoginForm() {
               disabled={loading}
               sx={{ mb: 2, position: 'relative' }}
             >
-              {loading ? <CircularProgress size={22} color="inherit" /> : '로그인'}
+              {loading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : (
+                '로그인'
+              )}
               {isEmailLastLogin && (
                 <Box
                   component="span"
@@ -245,7 +277,10 @@ export function LoginForm() {
               </Typography>
             </Divider>
 
-            <SocialLoginButtons lastLoginMethod={lastLoginMethod} mode="login" />
+            <SocialLoginButtons
+              lastLoginMethod={lastLoginMethod}
+              mode="login"
+            />
 
             {/* 하단 링크 */}
             <Stack
@@ -268,7 +303,9 @@ export function LoginForm() {
                 component={NextLink}
                 href="/register"
               >
-                회원가입
+                <Typography variant="inherit" fontWeight={500} pt={0.3}>
+                  회원가입
+                </Typography>
               </Button>
             </Stack>
           </Box>

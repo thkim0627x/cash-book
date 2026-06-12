@@ -6,7 +6,13 @@ export type SocialProvider = 'kakao' | 'naver' | 'google' | 'apple'
 
 const SOCIAL_CONFIG: Record<
   SocialProvider,
-  { label: string; bg: string; color: string; border?: string; logo: React.ReactNode }
+  {
+    label: string
+    bg: string
+    color: string
+    border?: string
+    logo: React.ReactNode
+  }
 > = {
   kakao: {
     label: '카카오',
@@ -26,7 +32,13 @@ const SOCIAL_CONFIG: Record<
     bg: '#03C75A',
     color: '#ffffff',
     logo: (
-      <Typography component="span" fontWeight={800} fontSize={15} lineHeight={1} color="#ffffff">
+      <Typography
+        component="span"
+        fontWeight={800}
+        fontSize={15}
+        lineHeight={1}
+        color="#ffffff"
+      >
         N
       </Typography>
     ),
@@ -78,7 +90,10 @@ export function SocialLoginButtons({ lastLoginMethod, mode = 'login' }: Props) {
   const showToast = useToastStore((s) => s.show)
 
   const handleSocial = (provider: SocialProvider) => {
-    showToast(`${SOCIAL_CONFIG[provider].label} ${mode === 'login' ? '로그인' : '간편가입'}은 준비 중입니다.`, 'info')
+    showToast(
+      `${SOCIAL_CONFIG[provider].label} ${mode === 'login' ? '로그인' : '간편가입'}은 준비 중입니다.`,
+      'info'
+    )
   }
 
   const providers: SocialProvider[] = ['kakao', 'naver', 'google', 'apple']
@@ -134,7 +149,6 @@ function SocialButton({
           bgcolor: cfg.bg,
           color: cfg.color,
           border: cfg.border ? `1px solid ${cfg.border}` : 'none',
-          borderRadius: 2,
           py: 1.1,
           fontWeight: 600,
           fontSize: '0.8rem',

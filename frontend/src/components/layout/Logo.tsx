@@ -2,6 +2,7 @@
 import { Box, Typography } from '@mui/material'
 import { CalendarCheck } from '@phosphor-icons/react'
 import { useRouter } from 'next/navigation'
+import { PiggyBank } from '@phosphor-icons/react'
 
 interface LogoProps {
   /** 아이콘만 표시 (사이드바 mini 모드 등) */
@@ -35,10 +36,15 @@ export function Logo({ iconOnly = false }: LogoProps) {
           flexShrink: 0,
         }}
       >
-        <CalendarCheck size={20} weight="fill" />
+        <PiggyBank size={20} weight="fill" />
       </Box>
       {!iconOnly && (
-        <Typography variant="h6" fontWeight={700} color="text.primary" sx={{ letterSpacing: '-0.02em' }}>
+        <Typography
+          variant="h6"
+          fontWeight={700}
+          color="text.primary"
+          sx={{ letterSpacing: '-0.02em' }}
+        >
           PlanDay
         </Typography>
       )}

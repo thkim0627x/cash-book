@@ -42,14 +42,36 @@ function RecommendRow({ benefit }: { benefit: Benefit }) {
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.25 }}>
-          <Chip label={benefit.category} size="small" color="primary" variant="outlined" sx={{ height: 18, fontSize: 10 }} />
-          <Chip label={ddayLabel(benefit.deadline)} size="small" color="error" sx={{ height: 18, fontSize: 10 }} />
+        <Stack
+          direction="row"
+          spacing={0.75}
+          alignItems="center"
+          sx={{ mb: 0.25 }}
+        >
+          <Chip
+            label={benefit.category}
+            size="small"
+            color="primary"
+            variant="outlined"
+            sx={{ height: 18, fontSize: 10 }}
+          />
+          <Chip
+            label={ddayLabel(benefit.deadline)}
+            size="small"
+            color="error"
+            sx={{ height: 18, fontSize: 10 }}
+          />
         </Stack>
         <Typography variant="body2" fontWeight={600} noWrap>
           {benefit.title}
         </Typography>
-        <Typography variant="caption" color="primary.main" fontWeight={600} noWrap display="block">
+        <Typography
+          variant="caption"
+          color="primary.main"
+          fontWeight={600}
+          noWrap
+          display="block"
+        >
           {benefit.benefit}
         </Typography>
       </Box>
@@ -88,7 +110,7 @@ export function BenefitRecommendBanner() {
   return (
     <Card
       sx={{
-        borderRadius: 1,
+        borderRadius: 2,
         background: (theme) =>
           `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.background.paper} 100%)`,
         border: '1px solid',
@@ -97,7 +119,11 @@ export function BenefitRecommendBanner() {
     >
       <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <Gift size={22} weight="fill" color="var(--mui-palette-primary-main)" />
+          <Gift
+            size={22}
+            weight="fill"
+            color="var(--mui-palette-primary-main)"
+          />
           <Typography variant="h6">청년 혜택 추천</Typography>
         </Stack>
 
@@ -105,7 +131,8 @@ export function BenefitRecommendBanner() {
         {!hasConditions ? (
           <Stack spacing={1.5} alignItems="flex-start">
             <Typography variant="body2" color="text.secondary">
-              소득·취업·지역 조건을 설정하면 나에게 맞는 청년 혜택을 추천해 드려요.
+              소득·취업·지역 조건을 설정하면 나에게 맞는 청년 혜택을 추천해
+              드려요.
             </Typography>
             <Button
               variant="contained"

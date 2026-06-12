@@ -16,10 +16,13 @@ export interface PresetTokens {
     default: string
     paper: string
     sidebar: string
+    canvasDeep: string
   }
   text: {
     primary: string
     secondary: string
+    muted: string
   }
   divider: string
+  divider2: string
 }

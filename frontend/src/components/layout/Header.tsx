@@ -1,31 +1,30 @@
 'use client'
-import { useState } from 'react'
+import { authService } from '@/services/auth.service'
+import { notificationService } from '@/services/notification.service'
+import { useAuthStore } from '@/stores/authStore'
+import { useToastStore } from '@/stores/toastStore'
 import {
   AppBar,
-  Toolbar,
-  Box,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Badge,
   Avatar,
-  Tooltip,
+  Badge,
+  Box,
+  Divider,
+  IconButton,
+  ListItemIcon,
   Menu,
   MenuItem,
-  ListItemIcon,
+  Toolbar,
+  Tooltip,
   Typography,
-  Divider,
 } from '@mui/material'
-import { Bell, MagnifyingGlass, SignOut, Gear, CaretDown } from '@phosphor-icons/react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/stores/authStore'
-import { authService } from '@/services/auth.service'
-import { useToastStore } from '@/stores/toastStore'
-import { Logo } from './Logo'
+import { Bell, CaretDown, Gear, SignOut } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
-import { notificationService } from '@/services/notification.service'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { Logo } from './Logo'
 
-export const HEADER_HEIGHT = 64
+// modern_redesign_guide: 헤더 60px, position sticky, 캔버스 배경
+export const HEADER_HEIGHT = 60
 
 export function Header() {
   const router = useRouter()
@@ -59,45 +58,64 @@ export function Header() {
   const initials = user?.name?.slice(0, 1).toUpperCase() ?? '?'
 
   return (
+    // position="sticky": 헤더가 1400px 프레임 내부에 자연스럽게 포함됨
+    // 스크롤 시 뷰포트 상단에 고정 (fixed와 달리 레이아웃 흐름에 포함)
     <AppBar
-      position="fixed"
-      elevation={0}
+      position="sticky"
       sx={{
-        bgcolor: 'background.paper',
-        color: 'text.primary',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        zIndex: (theme) => theme.zIndex.drawer + 1,
+        // bgcolor은 MuiAppBar 오버라이드(background.default)에서 처리
+        zIndex: (theme) => theme.zIndex.appBar,
       }}
     >
-      <Toolbar sx={{ gap: { xs: 1, md: 2 }, minHeight: `${HEADER_HEIGHT}px !important` }}>
-        {/* 로고 — 클릭 시 /dashboard (Logo 내부 처리) */}
+      <Toolbar
+        disableGutters
+        sx={{
+          minHeight: `${HEADER_HEIGHT}px !important`,
+          px: { xs: 1.5, sm: 2, md: 2.5 },
+          gap: { xs: 1, md: 1.5 },
+        }}
+      >
+        {/* 로고 */}
         <Logo />
 
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* 검색 (sm+) */}
-        <TextField
+        {/* 검색 (sm+) — bg: background.paper 로 캔버스 위에 부유 */}
+        {/* <TextField
           placeholder="검색 (거래내역, 태그, 메모)"
           size="small"
           sx={{
-            width: { sm: 220, md: 280 },
+            width: { sm: 200, md: 260 },
             display: { xs: 'none', sm: 'block' },
-            '& .MuiOutlinedInput-root': { bgcolor: 'background.default' },
+            '& .MuiOutlinedInput-root': {
+              bgcolor: 'background.paper',
+              borderRadius: '10px',
+              fontSize: '0.875rem',
+            },
           }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <MagnifyingGlass size={16} />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <MagnifyingGlass size={15} />
+                </InputAdornment>
+              ),
+            },
           }}
-        />
+        /> */}
 
-        {/* 알림 */}
+        {/* 알림 아이콘 */}
         <Tooltip title="알림">
-          <IconButton size="small" onClick={() => router.push('/notifications')}>
-            <Badge badgeContent={unreadCount > 0 ? unreadCount : null} color="error" max={99}>
+          <IconButton
+            size="small"
+            onClick={() => router.push('/notifications')}
+            sx={{ color: 'text.secondary', mr: -1.5 }}
+          >
+            <Badge
+              badgeContent={unreadCount > 0 ? unreadCount : null}
+              color="error"
+              max={99}
+            >
               <Bell size={20} />
             </Badge>
           </IconButton>
@@ -106,14 +124,25 @@ export function Header() {
         {/* 아바타 + 이름 */}
         <Box
           onClick={(e) => setAnchorEl(e.currentTarget)}
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', ml: 0.5 }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            cursor: 'pointer',
+            ml: 0.5,
+            px: 1,
+            py: 0.5,
+            borderRadius: '10px',
+            transition: 'background 0.15s',
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
         >
           <Avatar
             sx={{
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               bgcolor: 'primary.main',
-              fontSize: '0.875rem',
+              fontSize: '0.8125rem',
               fontWeight: 700,
             }}
           >
@@ -122,11 +151,14 @@ export function Header() {
           <Typography
             variant="body2"
             fontWeight={600}
-            sx={{ display: { xs: 'none', sm: 'block' } }}
+            sx={{
+              display: { xs: 'none', sm: 'block' },
+              letterSpacing: '-0.012em',
+            }}
           >
             {user?.name ?? '사용자'}
           </Typography>
-          <CaretDown size={14} />
+          <CaretDown size={13} />
         </Box>
 
         {/* 아바타 드롭다운 메뉴 */}
@@ -139,7 +171,9 @@ export function Header() {
           slotProps={{ paper: { sx: { mt: 1, minWidth: 180 } } }}
         >
           <Box sx={{ px: 2, py: 1 }}>
-            <Typography variant="subtitle2">{user?.name ?? '사용자'}</Typography>
+            <Typography variant="subtitle2">
+              {user?.name ?? '사용자'}
+            </Typography>
             <Typography variant="caption" color="text.secondary" noWrap>
               {user?.email ?? ''}
             </Typography>

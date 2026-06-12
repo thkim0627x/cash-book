@@ -112,7 +112,9 @@ export function RegisterForm() {
       }
     } catch (e: unknown) {
       const axiosError = e as { response?: { data?: { message?: string } } }
-      setServerError(axiosError.response?.data?.message || '회원가입 중 오류가 발생했습니다.')
+      setServerError(
+        axiosError.response?.data?.message || '회원가입 중 오류가 발생했습니다.'
+      )
     } finally {
       setLoading(false)
     }
@@ -130,7 +132,14 @@ export function RegisterForm() {
         py: 4,
       }}
     >
-      <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 1, p: { xs: 2, sm: 4 } }}>
+      <Card
+        sx={{
+          maxWidth: 420,
+          width: '100%',
+          borderRadius: 2,
+          p: { xs: 2, sm: 4 },
+        }}
+      >
         <CardContent sx={{ p: 0 }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Typography variant="h5" color="primary" fontWeight={700}>
@@ -156,7 +165,10 @@ export function RegisterForm() {
               helperText={errors.name?.message}
               {...register('name', {
                 required: '이름을 입력해주세요.',
-                maxLength: { value: 20, message: '이름은 20자 이하여야 합니다.' },
+                maxLength: {
+                  value: 20,
+                  message: '이름은 20자 이하여야 합니다.',
+                },
               })}
             />
 
@@ -168,7 +180,10 @@ export function RegisterForm() {
               helperText={errors.email?.message}
               {...register('email', {
                 required: '이메일을 입력해주세요.',
-                pattern: { value: /\S+@\S+\.\S+/, message: '올바른 이메일 형식이 아닙니다.' },
+                pattern: {
+                  value: /\S+@\S+\.\S+/,
+                  message: '올바른 이메일 형식이 아닙니다.',
+                },
               })}
             />
 
@@ -182,7 +197,11 @@ export function RegisterForm() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowPw((v) => !v)} edge="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowPw((v) => !v)}
+                      edge="end"
+                    >
                       {showPw ? <EyeSlash size={18} /> : <Eye size={18} />}
                     </IconButton>
                   </InputAdornment>
@@ -190,7 +209,10 @@ export function RegisterForm() {
               }}
               {...register('password', {
                 required: '비밀번호를 입력해주세요.',
-                minLength: { value: 8, message: '비밀번호는 8자 이상이어야 합니다.' },
+                minLength: {
+                  value: 8,
+                  message: '비밀번호는 8자 이상이어야 합니다.',
+                },
               })}
             />
             {password && (
@@ -201,7 +223,10 @@ export function RegisterForm() {
                   color={getStrengthColor(pwStrength)}
                   sx={{ height: 4, borderRadius: 2 }}
                 />
-                <Typography variant="caption" color={`${getStrengthColor(pwStrength)}.main`}>
+                <Typography
+                  variant="caption"
+                  color={`${getStrengthColor(pwStrength)}.main`}
+                >
                   {pwStrength < 50 ? '약함' : pwStrength < 75 ? '보통' : '강함'}
                 </Typography>
               </Box>
@@ -217,15 +242,24 @@ export function RegisterForm() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowPwConfirm((v) => !v)} edge="end">
-                      {showPwConfirm ? <EyeSlash size={18} /> : <Eye size={18} />}
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowPwConfirm((v) => !v)}
+                      edge="end"
+                    >
+                      {showPwConfirm ? (
+                        <EyeSlash size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
               {...register('passwordConfirm', {
                 required: '비밀번호 확인을 입력해주세요.',
-                validate: (val) => val === password || '비밀번호가 일치하지 않습니다.',
+                validate: (val) =>
+                  val === password || '비밀번호가 일치하지 않습니다.',
               })}
             />
 
@@ -238,8 +272,14 @@ export function RegisterForm() {
               helperText={errors.birthYear?.message ?? '예: 1995'}
               {...register('birthYear', {
                 required: '출생연도를 입력해주세요.',
-                min: { value: 1900, message: '올바른 출생연도를 입력해주세요.' },
-                max: { value: new Date().getFullYear(), message: '올바른 출생연도를 입력해주세요.' },
+                min: {
+                  value: 1900,
+                  message: '올바른 출생연도를 입력해주세요.',
+                },
+                max: {
+                  value: new Date().getFullYear(),
+                  message: '올바른 출생연도를 입력해주세요.',
+                },
               })}
             />
 
@@ -247,7 +287,7 @@ export function RegisterForm() {
             <Box
               sx={{
                 bgcolor: 'grey.50',
-                borderRadius: 2,
+                borderRadius: 1,
                 p: 1.5,
                 mb: 2.5,
                 border: '1px solid',
@@ -260,18 +300,27 @@ export function RegisterForm() {
                     size="small"
                     checked={allChecked}
                     indeterminate={
-                      (agreeTerms || agreePrivacy || agreeMarketing) && !allChecked
+                      (agreeTerms || agreePrivacy || agreeMarketing) &&
+                      !allChecked
                     }
                     onChange={(e) => handleAllCheck(e.target.checked)}
                   />
                 }
-                label={<Typography variant="body2" fontWeight={600}>전체 동의</Typography>}
+                label={
+                  <Typography variant="body2" fontWeight={600}>
+                    전체 동의
+                  </Typography>
+                }
                 sx={{ mb: 0.5 }}
               />
               <Divider sx={{ mb: 0.5 }} />
 
               <Stack spacing={0}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
                   <Controller
                     name="agreeTerms"
                     control={control}
@@ -282,12 +331,19 @@ export function RegisterForm() {
                           <Checkbox
                             size="small"
                             checked={field.value}
-                            onChange={(e) => { field.onChange(e.target.checked); syncAll() }}
+                            onChange={(e) => {
+                              field.onChange(e.target.checked)
+                              syncAll()
+                            }}
                           />
                         }
                         label={
                           <Typography variant="caption">
-                            <Typography component="span" variant="caption" color="error">
+                            <Typography
+                              component="span"
+                              variant="caption"
+                              color="error"
+                            >
                               (필수)
                             </Typography>{' '}
                             서비스 이용약관
@@ -296,7 +352,12 @@ export function RegisterForm() {
                       />
                     )}
                   />
-                  <Link href="#" variant="caption" color="text.secondary" underline="hover">
+                  <Link
+                    href="#"
+                    variant="caption"
+                    color="text.secondary"
+                    underline="hover"
+                  >
                     보기
                   </Link>
                 </Stack>
@@ -306,7 +367,11 @@ export function RegisterForm() {
                   </Typography>
                 )}
 
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
                   <Controller
                     name="agreePrivacy"
                     control={control}
@@ -317,12 +382,19 @@ export function RegisterForm() {
                           <Checkbox
                             size="small"
                             checked={field.value}
-                            onChange={(e) => { field.onChange(e.target.checked); syncAll() }}
+                            onChange={(e) => {
+                              field.onChange(e.target.checked)
+                              syncAll()
+                            }}
                           />
                         }
                         label={
                           <Typography variant="caption">
-                            <Typography component="span" variant="caption" color="error">
+                            <Typography
+                              component="span"
+                              variant="caption"
+                              color="error"
+                            >
                               (필수)
                             </Typography>{' '}
                             개인정보 처리방침
@@ -331,7 +403,12 @@ export function RegisterForm() {
                       />
                     )}
                   />
-                  <Link href="#" variant="caption" color="text.secondary" underline="hover">
+                  <Link
+                    href="#"
+                    variant="caption"
+                    color="text.secondary"
+                    underline="hover"
+                  >
                     보기
                   </Link>
                 </Stack>
@@ -350,12 +427,19 @@ export function RegisterForm() {
                         <Checkbox
                           size="small"
                           checked={field.value}
-                          onChange={(e) => { field.onChange(e.target.checked); syncAll() }}
+                          onChange={(e) => {
+                            field.onChange(e.target.checked)
+                            syncAll()
+                          }}
                         />
                       }
                       label={
                         <Typography variant="caption">
-                          <Typography component="span" variant="caption" color="text.secondary">
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            color="text.secondary"
+                          >
                             (선택)
                           </Typography>{' '}
                           마케팅 정보 수신 동의
@@ -375,7 +459,11 @@ export function RegisterForm() {
               disabled={loading}
               sx={{ mb: 2 }}
             >
-              {loading ? <CircularProgress size={22} color="inherit" /> : '가입하기'}
+              {loading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : (
+                '가입하기'
+              )}
             </Button>
 
             <Button

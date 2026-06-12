@@ -28,7 +28,11 @@ function formatDate(dateStr: string) {
   return `${d.getMonth() + 1}.${String(d.getDate()).padStart(2, '0')} (${days[d.getDay()]})`
 }
 
-export function TransactionList({ transactions, onDelete, compact = false }: TransactionListProps) {
+export function TransactionList({
+  transactions,
+  onDelete,
+  compact = false,
+}: TransactionListProps) {
   if (transactions.length === 0) {
     return <EmptyState message="거래내역이 없습니다." />
   }
@@ -67,7 +71,8 @@ export function TransactionList({ transactions, onDelete, compact = false }: Tra
                 width: 32,
                 height: 32,
                 bgcolor:
-                  txn.categoryColor ?? (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
+                  txn.categoryColor ??
+                  (txn.type === 'INCOME' ? '#e1f5fe' : '#ffebee'),
                 fontSize: '0.75rem',
               }}
             >
@@ -78,9 +83,7 @@ export function TransactionList({ transactions, onDelete, compact = false }: Tra
           <ListItemText
             primary={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {!compact && (
-                  <TransactionTypeChip type={txn.type} />
-                )}
+                {!compact && <TransactionTypeChip type={txn.type} />}
                 <Typography variant="body2" fontWeight={500}>
                   {txn.categoryName}
                 </Typography>

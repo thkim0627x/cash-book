@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanDay — Modern Mockup</title>
+<style>
+  :root{
+    --primary:#0277BD;
+    --primary-dark:#01579B;
+    --primary-tint:#E1F5FE;
+    --primary-soft:#F0F7FB;
+    --secondary:#0097A7;
+    --outer:#E8EEF3;
+    --paper:#FFFFFF;
+    --ink:#0D2137;
+    --muted:#5B7488;
+    --line:#E3EAF0;
+    --green:#16A34A;
+    --red:#E11D48;
+    --shadow-sm:0 1px 2px rgba(13,33,55,.04), 0 1px 3px rgba(13,33,55,.06);
+    --shadow-md:0 2px 8px rgba(13,33,55,.06), 0 8px 24px rgba(13,33,55,.05);
+    --radius:16px;
+    --radius-sm:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Pretendard','Segoe UI',-apple-system,system-ui,sans-serif;
+    background:var(--outer);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    letter-spacing:-.01em;
+  }
+  .frame{
+    max-width:1400px;margin:0 auto;background:var(--primary-soft);
+    min-height:100vh;display:flex;flex-direction:column;
+    box-shadow:0 0 0 1px var(--line);
+  }
+  /* Header */
+  header{
+    height:64px;background:var(--paper);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;padding:0 24px;gap:20px;position:sticky;top:0;z-index:10;
+  }
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;}
+  .logo .mark{width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--primary),#039BE5);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;box-shadow:var(--shadow-sm);}
+  .search{flex:1;max-width:520px;margin-left:8px;position:relative;}
+  .search input{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;
+    padding:0 14px 0 40px;font-size:14px;background:#F7FAFC;color:var(--ink);outline:none;}
+  .search input::placeholder{color:#9AAAB8;}
+  .search svg{position:absolute;left:13px;top:11px;color:#9AAAB8;}
+  .h-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+  .icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;
+    display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;position:relative;}
+  .icon-btn .dot{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid #fff;}
+  .avatar{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;border:1px solid var(--line);border-radius:30px;background:#fff;cursor:pointer;}
+  .avatar .ic{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+  .avatar .nm{font-size:14px;font-weight:600;}
+  .avatar .cv{color:#9AAAB8;font-size:11px;}
+  /* Body layout */
+  .body{display:flex;flex:1;}
+  /* Sidebar */
+  nav{width:240px;flex-shrink:0;background:var(--paper);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;}
+  .nav-sec{font-size:11px;font-weight:700;color:#9AAAB8;letter-spacing:.06em;margin:18px 10px 8px;text-transform:uppercase;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;color:var(--muted);font-size:14.5px;font-weight:500;cursor:pointer;margin-bottom:2px;}
+  .nav-item svg{width:19px;height:19px;}
+  .nav-item:hover{background:#F4F8FB;color:var(--ink);}
+  .nav-item.active{background:var(--primary-tint);color:var(--primary-dark);font-weight:700;}
+  .nav-item.active svg{color:var(--primary);}
+  .nav-foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:11px 12px;color:#9AAAB8;font-size:13.5px;}
+  /* Main */
+  main{flex:1;min-width:0;padding:26px 28px;display:flex;flex-direction:column;gap:20px;}
+  .greet{display:flex;align-items:center;justify-content:space-between;}
+  .greet h1{font-size:20px;font-weight:700;}
+  .greet h1 b{color:var(--primary);}
+  .greet p{font-size:13px;color:var(--muted);margin-top:3px;}
+  .btn-primary{height:42px;padding:0 20px;border:none;border-radius:11px;
+    background:linear-gradient(135deg,var(--primary),#0288D1);color:#fff;font-size:14.5px;font-weight:700;
+    display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 12px rgba(2,119,189,.25);}
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;}
+  .stat .lab{font-size:13px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px;}
+  .stat .val{font-size:26px;font-weight:800;margin-top:10px;letter-spacing:-.02em;}
+  .stat .val small{font-size:14px;font-weight:600;color:var(--muted);}
+  .stat .chip{position:absolute;top:18px;right:18px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;}
+  .chip.up{background:#E8F7EE;color:var(--green);}
+  .chip.down{background:#FDEAEF;color:var(--red);}
+  .stat .ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+  /* quick actions */
+  .qa{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .qa a{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:18px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;box-shadow:var(--shadow-sm);text-decoration:none;color:var(--ink);transition:.15s;}
+  .qa a:hover{border-color:var(--primary);box-shadow:var(--shadow-md);transform:translateY(-2px);}
+  .qa .qi{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .qa span{font-size:13.5px;font-weight:600;}
+  /* two col */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;}
+  .card-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;}
+  .card-h h3{font-size:16px;font-weight:700;}
+  .card-h a{font-size:12.5px;color:var(--primary);font-weight:600;text-decoration:none;}
+  .card-b{padding:0 20px 16px;}
+  /* tx list */
+  .tx{display:flex;align-items:center;gap:13px;padding:13px 0;border-top:1px solid var(--line);}
+  .tx:first-child{border-top:none;}
+  .tx .tic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0;}
+  .tx .tn{font-size:14.5px;font-weight:600;}
+  .tx .ts{font-size:12px;color:var(--muted);margin-top:2px;}
+  .tx .ta{margin-left:auto;font-size:15px;font-weight:700;}
+  .ta.in{color:var(--primary);}
+  .ta.out{color:var(--ink);}
+  /* budget empty */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;text-align:center;}
+  .empty .eic{width:64px;height:64px;border-radius:16px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:28px;margin-bottom:14px;}
+  .empty p{font-size:14px;color:var(--muted);margin-bottom:16px;}
+  .btn-ghost{height:38px;padding:0 18px;border:1.5px solid var(--primary);border-radius:10px;background:#fff;color:var(--primary);font-weight:700;font-size:13.5px;cursor:pointer;}
+  /* Quick Panel */
+  aside{width:320px;flex-shrink:0;background:var(--paper);border-left:1px solid var(--line);padding:22px 20px;display:flex;flex-direction:column;gap:22px;}
+  .qp-sec h4{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:13px;}
+  .qp-sec h4 .more{margin-left:auto;font-size:12px;color:var(--primary);font-weight:600;}
+  .qp-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;padding:6px 0;}
+  .qp-row .k{color:var(--muted);font-weight:500;}
+  .qp-row .v{font-weight:700;}
+  .v.in{color:var(--green);} .v.out{color:var(--red);}
+  .qp-divider{height:1px;background:var(--line);margin:2px 0;}
+  .qp-empty{font-size:13px;color:#9AAAB8;padding:8px 0;}
+  .qp-tx{display:flex;align-items:center;gap:10px;padding:8px 0;}
+  .qp-tx .qti{width:28px;height:28px;border-radius:8px;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .qp-tx .qtn{font-size:13.5px;font-weight:600;}
+  .qp-tx .qta{margin-left:auto;font-size:13.5px;font-weight:700;}
+  .benefit{background:linear-gradient(135deg,#E1F5FE,#F0F7FB);border:1px solid #CDE9F5;border-radius:14px;padding:16px;}
+  .benefit h5{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .benefit p{font-size:12.5px;color:var(--muted);margin:8px 0 13px;line-height:1.5;}
+  .benefit button{width:100%;height:38px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;}
+  .qp-cta{margin-top:auto;width:100%;height:46px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--primary),#0288D1);color:#fff;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(2,119,189,.28);}
+  .pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--primary-tint);color:var(--primary-dark);}
+</style>
+</head>
+<body>
+<div class="frame">
+  <!-- Header -->
+  <header>
+    <div class="logo"><span class="mark">📅</span> PlanDay</div>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input placeholder="검색 (거래내역, 태그, 메모)">
+    </div>
+    <div class="h-right">
+      <div class="icon-btn"><span class="dot"></span>🔔</div>
+      <div class="avatar"><span class="ic">김</span><div><div class="nm">김태형</div></div><span class="cv">▾</span></div>
+    </div>
+  </header>
+
+  <div class="body">
+    <!-- Sidebar -->
+    <nav>
+      <div class="nav-item active">🏠 <span>홈</span></div>
+      <div class="nav-item">📋 <span>내역</span></div>
+      <div class="nav-item">📅 <span>달력</span></div>
+      <div class="nav-sec">자산관리</div>
+      <div class="nav-item">🏦 <span>자산</span></div>
+      <div class="nav-item">💰 <span>예산</span></div>
+      <div class="nav-item">📊 <span>통계</span></div>
+      <div class="nav-sec">더보기</div>
+      <div class="nav-item">🎁 <span>청년혜택</span> <span class="pill" style="margin-left:auto">NEW</span></div>
+      <div class="nav-item">💬 <span>커뮤니티</span></div>
+      <div class="nav-item">🔔 <span>알림</span></div>
+      <div class="nav-item">⚙️ <span>설정</span></div>
+      <div class="nav-foot">🎧 고객센터</div>
+    </nav>
+
+    <!-- Main -->
+    <main>
+      <div class="greet">
+        <div>
+          <h1>좋은 저녁이에요, <b>김태형</b>님 👋</h1>
+          <p>오늘도 현명한 소비, PlanDay가 함께할게요</p>
+        </div>
+        <button class="btn-primary">＋ 거래 추가</button>
+      </div>
+
+      <!-- stat cards -->
+      <div class="stats">
+        <div class="stat">
+          <div class="lab"><span class="ico" style="background:#E1F5FE;color:#0277BD">🏦</span> 자산</div>
+          <div class="val">0 <small>원</small></div>
+        </div>
+        <div class="stat">
+          <div class="lab"><span class="ico" style="background:#FDEAEF;color:#E11D48">📉</span> 부채</div>
+          <div class="val">0 <small>원</small></div>
+        </div>
+        <div class="stat">
+          <div class="lab"><span class="ico" style="background:#E8F7EE;color:#16A34A">📈</span> 자본</div>
+          <div class="val">8,500,700 <small>원</small></div>
+          <span class="chip up">▲ 5.2%</span>
+        </div>
+      </div>
+
+      <!-- quick actions -->
+      <div class="qa">
+        <a><span class="qi" style="background:#E8F7EE;color:#16A34A">↗</span><span>수입 추가</span></a>
+        <a><span class="qi" style="background:#FDEAEF;color:#E11D48">↘</span><span>지출 추가</span></a>
+        <a><span class="qi" style="background:#E1F5FE;color:#0277BD">🐷</span><span>자산 현황</span></a>
+        <a><span class="qi" style="background:#EDE9FE;color:#7C3AED">📊</span><span>통계</span></a>
+      </div>
+
+      <!-- two col -->
+      <div class="grid2">
+        <div class="card">
+          <div class="card-h"><h3>최근 거래</h3><a>전체 보기 →</a></div>
+          <div class="card-b">
+            <div class="tx"><span class="tic" style="background:#16A34A">급</span><div><div class="tn">6월 급여</div><div class="ts">급여 · 6/25</div></div><span class="ta in">+3,500,000원</span></div>
+            <div class="tx"><span class="tic" style="background:#F97316">문</span><div><div class="tn">OTT 구독</div><div class="ts">문화/여가 · 6/20</div></div><span class="ta out">-9,900원</span></div>
+            <div class="tx"><span class="tic" style="background:#16A34A">부</span><div><div class="tn">부업 수익</div><div class="ts">부업 · 6/18</div></div><span class="ta in">+220,000원</span></div>
+            <div class="tx"><span class="tic" style="background:#A855F7">주</span><div><div class="tn">휴대폰 요금</div><div class="ts">주거/통신 · 6/15</div></div><span class="ta out">-55,000원</span></div>
+            <div class="tx"><span class="tic" style="background:#F97316">문</span><div><div class="tn">영화</div><div class="ts">문화/여가 · 6/14</div></div><span class="ta out">-17,000원</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>예산 현황</h3><a>관리 →</a></div>
+          <div class="card-b">
+            <div class="empty">
+              <div class="eic">📋</div>
+              <p>아직 설정된 예산이 없어요.<br>이번 달 예산을 세워볼까요?</p>
+              <button class="btn-ghost">예산 설정하기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card"><div class="card-h"><h3>카테고리별 지출</h3><a>분석 →</a></div><div class="card-b" style="height:140px;display:flex;align-items:center;justify-content:center;color:#9AAAB8;font-size:13px">🍩 도넛 차트 영역</div></div>
+        <div class="card"><div class="card-h"><h3>월별 추이</h3><a>통계 →</a></div><div class="card-b" style="height:140px;display:flex;align-items:center;justify-content:center;color:#9AAAB8;font-size:13px">📊 막대 차트 영역</div></div>
+      </div>
+    </main>
+
+    <!-- Quick Panel -->
+    <aside>
+      <div class="qp-sec">
+        <h4>📋 이번 달 요약</h4>
+        <div class="qp-row"><span class="k">수입</span><span class="v in">+6,820,000원</span></div>
+        <div class="qp-row"><span class="k">지출</span><span class="v out">-927,450원</span></div>
+        <div class="qp-divider"></div>
+        <div class="qp-row"><span class="k" style="font-weight:700;color:var(--ink)">잔액</span><span class="v">5,892,550원</span></div>
+      </div>
+
+      <div class="qp-sec">
+        <h4>🎯 예산 달성률 <span class="more">관리 →</span></h4>
+        <div class="qp-empty">설정된 예산이 없어요</div>
+      </div>
+
+      <div class="qp-sec">
+        <h4>🕐 최근 거래 <span class="more">전체 →</span></h4>
+        <div class="qp-tx"><span class="qti" style="background:#16A34A">급</span><span class="qtn">6월 급여</span><span class="qta in" style="color:#16A34A">+3,500,000</span></div>
+        <div class="qp-tx"><span class="qti" style="background:#F97316">문</span><span class="qtn">OTT 구독</span><span class="qta out" style="color:#E11D48">-9,900</span></div>
+        <div class="qp-tx"><span class="qti" style="background:#16A34A">부</span><span class="qtn">부업 수익</span><span class="qta in" style="color:#16A34A">+220,000</span></div>
+      </div>
+
+      <div class="benefit">
+        <h5>🎁 청년 혜택 추천</h5>
+        <p>소득·취업·지역 조건을 설정하면 나에게 맞는 청년 혜택을 추천해 드려요.</p>
+        <button>조건 설정하기</button>
+      </div>
+
+      <button class="qp-cta">＋ 거래 추가</button>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

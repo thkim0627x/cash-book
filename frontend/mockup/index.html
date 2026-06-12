@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanDay — Modern Slim Mockup</title>
+<style>
+  :root{
+    --primary:#0277BD;
+    --primary-dark:#01579B;
+    --primary-tint:#E3F2FB;
+    --secondary:#0097A7;
+    --canvas:#EAF1F7;
+    --canvas-deep:#DCE7F0;
+    --paper:#FFFFFF;
+    --ink:#0E2438;
+    --ink-2:#3A5168;
+    --muted:#7C93A6;
+    --line:#EAF0F5;
+    --line-2:#E0E8EF;
+    --green:#15A34A;
+    --red:#E11D48;
+    --orange:#F97316;
+    --radius:18px;
+    --radius-sm:14px;
+    --shadow:0 1px 2px rgba(14,36,56,.03), 0 6px 20px rgba(14,36,56,.05);
+    --shadow-hover:0 2px 6px rgba(14,36,56,.06), 0 14px 34px rgba(14,36,56,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Pretendard','Segoe UI',-apple-system,system-ui,sans-serif;
+    background:var(--canvas);color:var(--ink);
+    -webkit-font-smoothing:antialiased;letter-spacing:-.012em;font-size:14px;
+  }
+  .frame{max-width:1400px;margin:0 auto;background:var(--canvas);min-height:100vh;
+    display:flex;flex-direction:column;}
+
+  /* Header — slim bar */
+  header{height:60px;display:flex;align-items:center;gap:18px;padding:0 18px;position:sticky;top:0;z-index:20;background:var(--canvas);}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px;width:222px;}
+  .logo .mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--primary),#039BE5);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;box-shadow:0 4px 10px rgba(2,119,189,.3);}
+  .search{flex:1;max-width:460px;position:relative;}
+  .search input{width:100%;height:38px;border:1px solid var(--line-2);border-radius:10px;padding:0 14px 0 38px;
+    font-size:13.5px;background:#fff;color:var(--ink);outline:none;box-shadow:var(--shadow);}
+  .search input::placeholder{color:#A4B4C2;}
+  .search svg{position:absolute;left:13px;top:11px;color:#A4B4C2;}
+  .h-right{margin-left:auto;display:flex;align-items:center;gap:11px;}
+  .icon-btn{width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid var(--line-2);
+    display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;position:relative;box-shadow:var(--shadow);}
+  .icon-btn .dot{position:absolute;top:8px;right:9px;width:6px;height:6px;border-radius:50%;background:var(--red);border:2px solid #fff;}
+  .avatar{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 5px;border:1px solid var(--line-2);border-radius:30px;background:#fff;cursor:pointer;box-shadow:var(--shadow);}
+  .avatar .ic{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .avatar .nm{font-size:13.5px;font-weight:600;}
+  .avatar .cv{color:#A4B4C2;font-size:10px;}
+
+  /* Body */
+  .body{display:flex;flex:1;gap:48px;padding:2px 18px 18px;align-items:flex-start;}
+
+  /* Sidebar — floating rounded panel */
+  nav{width:222px;flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 12px;box-shadow:var(--shadow);position:sticky;top:70px;display:flex;flex-direction:column;}
+  .nav-sec{font-size:10.5px;font-weight:700;color:#A4B4C2;letter-spacing:.07em;margin:16px 10px 7px;text-transform:uppercase;}
+  .nav-sec:first-child{margin-top:4px;}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;color:var(--ink-2);
+    font-size:14px;font-weight:500;cursor:pointer;margin-bottom:1px;transition:.12s;}
+  .nav-item .ig{width:20px;text-align:center;font-size:15px;opacity:.8;}
+  .nav-item:hover{background:#F4F8FB;color:var(--ink);}
+  .nav-item.active{background:var(--primary);color:#fff;font-weight:600;box-shadow:0 6px 16px rgba(2,119,189,.32);}
+  .nav-item.active .ig{opacity:1;}
+  .nav-foot{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;padding-left:12px;color:#A4B4C2;font-size:13px;}
+  .pill{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:20px;background:#FFF1E6;color:var(--orange);margin-left:auto;letter-spacing:.02em;}
+  .nav-item.active .pill{background:rgba(255,255,255,.22);color:#fff;}
+
+  /* Main column */
+  main{flex:1;min-width:0;max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+  .greet{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 0;}
+  .greet h1{font-size:19px;font-weight:700;}
+  .greet h1 b{color:var(--primary);}
+  .greet p{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .btn-primary{height:40px;padding:0 18px;border:none;border-radius:11px;
+    background:linear-gradient(135deg,var(--primary),#0288D1);color:#fff;font-size:14px;font-weight:700;
+    display:inline-flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 6px 16px rgba(2,119,189,.3);}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .stat{padding:18px;position:relative;}
+  .stat .lab{font-size:12.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px;}
+  .stat .ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .stat .val{font-size:24px;font-weight:800;margin-top:12px;letter-spacing:-.02em;}
+  .stat .val small{font-size:13px;font-weight:600;color:var(--muted);}
+  .chip{position:absolute;top:16px;right:16px;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:20px;}
+  .chip.up{background:#E7F7ED;color:var(--green);}
+
+  .qa{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .qa a{padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;
+    text-decoration:none;color:var(--ink);transition:.14s;}
+  .qa a:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px);border-color:var(--primary-tint);}
+  .qa .qi{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .qa span{font-size:13px;font-weight:600;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .card-h{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;}
+  .card-h h3{font-size:15px;font-weight:700;}
+  .card-h a{font-size:12px;color:var(--primary);font-weight:600;text-decoration:none;}
+  .card-b{padding:0 18px 14px;}
+
+  .tx{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);}
+  .tx:first-child{border-top:none;}
+  .tx .tic{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12.5px;font-weight:700;flex-shrink:0;}
+  .tx .tn{font-size:14px;font-weight:600;}
+  .tx .ts{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .tx .ta{margin-left:auto;font-size:14.5px;font-weight:700;}
+  .ta.in{color:var(--primary);} .ta.out{color:var(--ink);}
+
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:42px 20px;text-align:center;}
+  .empty .eic{width:58px;height:58px;border-radius:15px;background:var(--primary-tint);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:24px;margin-bottom:13px;}
+  .empty p{font-size:13px;color:var(--muted);margin-bottom:15px;line-height:1.5;}
+  .btn-ghost{height:36px;padding:0 17px;border:1.5px solid var(--primary);border-radius:10px;background:#fff;color:var(--primary);font-weight:700;font-size:13px;cursor:pointer;}
+  .chart-ph{height:128px;display:flex;align-items:center;justify-content:center;color:#A4B4C2;font-size:12.5px;}
+
+  /* Quick Panel — floating */
+  aside{width:300px;flex-shrink:0;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:18px 16px;position:sticky;top:70px;display:flex;flex-direction:column;gap:20px;}
+  .qp-sec h4{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:11px;}
+  .qp-sec h4 .more{margin-left:auto;font-size:11.5px;color:var(--primary);font-weight:600;}
+  .qp-row{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;padding:5px 0;}
+  .qp-row .k{color:var(--muted);font-weight:500;}
+  .qp-row .v{font-weight:700;}
+  .v.in{color:var(--green);} .v.out{color:var(--red);}
+  .qp-divider{height:1px;background:var(--line);margin:3px 0;}
+  .qp-empty{font-size:12.5px;color:#A4B4C2;padding:6px 0;}
+  .qp-tx{display:flex;align-items:center;gap:10px;padding:7px 0;}
+  .qp-tx .qti{width:26px;height:26px;border-radius:8px;color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .qp-tx .qtn{font-size:13px;font-weight:600;}
+  .qp-tx .qta{margin-left:auto;font-size:13px;font-weight:700;}
+  .benefit{background:linear-gradient(140deg,#E3F2FB,#EAF6F8);border:1px solid #CFE8F4;border-radius:14px;padding:15px;}
+  .benefit h5{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .benefit p{font-size:12px;color:var(--ink-2);margin:8px 0 12px;line-height:1.5;}
+  .benefit button{width:100%;height:36px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 5px 13px rgba(2,119,189,.28);}
+  .qp-cta{margin-top:auto;width:100%;height:44px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--primary),#0288D1);color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 7px 18px rgba(2,119,189,.3);}
+</style>
+</head>
+<body>
+<div class="frame">
+  <header>
+    <div class="logo"><span class="mark">📅</span> PlanDay</div>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input placeholder="검색 (거래내역, 태그, 메모)">
+    </div>
+    <div class="h-right">
+      <div class="icon-btn"><span class="dot"></span>🔔</div>
+      <div class="avatar"><span class="ic">김</span><span class="nm">김태형</span><span class="cv">▾</span></div>
+    </div>
+  </header>
+
+  <div class="body">
+    <nav>
+      <div class="nav-item active"><span class="ig">🏠</span> 홈</div>
+      <div class="nav-item"><span class="ig">📋</span> 내역</div>
+      <div class="nav-item"><span class="ig">📅</span> 달력</div>
+      <div class="nav-sec">자산관리</div>
+      <div class="nav-item"><span class="ig">🏦</span> 자산</div>
+      <div class="nav-item"><span class="ig">💰</span> 예산</div>
+      <div class="nav-item"><span class="ig">📊</span> 통계</div>
+      <div class="nav-sec">더보기</div>
+      <div class="nav-item"><span class="ig">🎁</span> 청년혜택 <span class="pill">NEW</span></div>
+      <div class="nav-item"><span class="ig">💬</span> 커뮤니티</div>
+      <div class="nav-item"><span class="ig">🔔</span> 알림</div>
+      <div class="nav-item"><span class="ig">⚙️</span> 설정</div>
+      <div class="nav-foot">🎧 고객센터</div>
+    </nav>
+
+    <main>
+      <div class="greet">
+        <div>
+          <h1>좋은 저녁이에요, <b>김태형</b>님 👋</h1>
+          <p>오늘도 현명한 소비, PlanDay가 함께할게요</p>
+        </div>
+        <button class="btn-primary">＋ 거래 추가</button>
+      </div>
+
+      <div class="stats">
+        <div class="card stat">
+          <div class="lab"><span class="ico" style="background:#E3F2FB;color:#0277BD">🏦</span> 자산</div>
+          <div class="val">0 <small>원</small></div>
+        </div>
+        <div class="card stat">
+          <div class="lab"><span class="ico" style="background:#FDEAEF;color:#E11D48">📉</span> 부채</div>
+          <div class="val">0 <small>원</small></div>
+        </div>
+        <div class="card stat">
+          <div class="lab"><span class="ico" style="background:#E7F7ED;color:#15A34A">📈</span> 자본</div>
+          <div class="val">8,500,700 <small>원</small></div>
+          <span class="chip up">▲ 5.2%</span>
+        </div>
+      </div>
+
+      <div class="qa">
+        <a class="card"><span class="qi" style="background:#E7F7ED;color:#15A34A">↗</span><span>수입 추가</span></a>
+        <a class="card"><span class="qi" style="background:#FDEAEF;color:#E11D48">↘</span><span>지출 추가</span></a>
+        <a class="card"><span class="qi" style="background:#E3F2FB;color:#0277BD">🐷</span><span>자산 현황</span></a>
+        <a class="card"><span class="qi" style="background:#EDE9FE;color:#7C3AED">📊</span><span>통계</span></a>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-h"><h3>최근 거래</h3><a>전체 보기 →</a></div>
+          <div class="card-b">
+            <div class="tx"><span class="tic" style="background:#15A34A">급</span><div><div class="tn">6월 급여</div><div class="ts">급여 · 6/25</div></div><span class="ta in">+3,500,000원</span></div>
+            <div class="tx"><span class="tic" style="background:#F97316">문</span><div><div class="tn">OTT 구독</div><div class="ts">문화/여가 · 6/20</div></div><span class="ta out">-9,900원</span></div>
+            <div class="tx"><span class="tic" style="background:#15A34A">부</span><div><div class="tn">부업 수익</div><div class="ts">부업 · 6/18</div></div><span class="ta in">+220,000원</span></div>
+            <div class="tx"><span class="tic" style="background:#A855F7">주</span><div><div class="tn">휴대폰 요금</div><div class="ts">주거/통신 · 6/15</div></div><span class="ta out">-55,000원</span></div>
+            <div class="tx"><span class="tic" style="background:#F97316">문</span><div><div class="tn">영화</div><div class="ts">문화/여가 · 6/14</div></div><span class="ta out">-17,000원</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>예산 현황</h3><a>관리 →</a></div>
+          <div class="card-b">
+            <div class="empty">
+              <div class="eic">📋</div>
+              <p>아직 설정된 예산이 없어요.<br>이번 달 예산을 세워볼까요?</p>
+              <button class="btn-ghost">예산 설정하기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card"><div class="card-h"><h3>카테고리별 지출</h3><a>분석 →</a></div><div class="card-b"><div class="chart-ph">🍩 도넛 차트 영역</div></div></div>
+        <div class="card"><div class="card-h"><h3>월별 추이</h3><a>통계 →</a></div><div class="card-b"><div class="chart-ph">📊 막대 차트 영역</div></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

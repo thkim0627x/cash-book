@@ -18,10 +18,13 @@ export const sodaTheme: PresetTokens = {
     default: '#EEF8F7', // 아주 연한 민트-화이트
     paper: '#FFFFFF',
     sidebar: '#FFFFFF',
+    canvasDeep: '#DFF0EE',
   },
   text: {
     primary: '#1A3535', // 진한 틸-블랙
     secondary: '#4A6B6A', // 그레이-틸
+    muted: '#7A9E9C',
   },
   divider: '#C6E8E5',
+  divider2: '#B5DDD9',
 }

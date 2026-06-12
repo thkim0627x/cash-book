@@ -1,14 +1,41 @@
 'use client'
 import { useState } from 'react'
 import {
-  Dialog, DialogTitle, DialogContent, Box, Stack, Typography,
-  IconButton, Button, Divider, TextField, Select, MenuItem,
-  FormControl, InputLabel, InputAdornment, CircularProgress,
-  Chip, Avatar, Tabs, Tab, Collapse,
-  useTheme, useMediaQuery, Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Box,
+  Stack,
+  Typography,
+  IconButton,
+  Button,
+  Divider,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  InputAdornment,
+  CircularProgress,
+  Chip,
+  Avatar,
+  Tabs,
+  Tab,
+  Collapse,
+  useTheme,
+  useMediaQuery,
+  Tooltip,
 } from '@mui/material'
 import {
-  X, Plus, PencilSimple, Trash, Bank, Money, Bag, CreditCard, Repeat,
+  X,
+  Plus,
+  PencilSimple,
+  Trash,
+  Bank,
+  Money,
+  Bag,
+  CreditCard,
+  Repeat,
 } from '@phosphor-icons/react'
 import { useForm, Controller } from 'react-hook-form'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -26,7 +53,9 @@ function fmt(v: string) {
   const d = v.replace(/[^0-9]/g, '')
   return d ? Number(d).toLocaleString('ko-KR') : ''
 }
-function parse(v: string) { return Number(v.replace(/[^0-9]/g, '')) }
+function parse(v: string) {
+  return Number(v.replace(/[^0-9]/g, ''))
+}
 function todayStr() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -34,40 +63,64 @@ function todayStr() {
 
 // ── 자산 카테고리 설정 ─────────────────────────────────────────────────────────
 type AssetClass = 'ASSET' | 'LIABILITY'
-const ASSET_TYPES: AssetType[]    = ['SAVINGS', 'CASH', 'ETC']
-const LIAB_TYPES:  AssetType[]    = ['CREDIT_CARD']
+const ASSET_TYPES: AssetType[] = ['SAVINGS', 'CASH', 'ETC']
+const LIAB_TYPES: AssetType[] = ['CREDIT_CARD']
 
-const CAT_CFG: Record<AssetType, { icon: React.ElementType; bg: string; fg: string }> = {
-  SAVINGS:     { icon: Bank,       bg: '#e3f2fd', fg: '#1565c0' },
-  CASH:        { icon: Money,      bg: '#e8f5e9', fg: '#2e7d32' },
-  ETC:         { icon: Bag,        bg: '#f3e5f5', fg: '#6a1b9a' },
+const CAT_CFG: Record<
+  AssetType,
+  { icon: React.ElementType; bg: string; fg: string }
+> = {
+  SAVINGS: { icon: Bank, bg: '#e3f2fd', fg: '#1565c0' },
+  CASH: { icon: Money, bg: '#e8f5e9', fg: '#2e7d32' },
+  ETC: { icon: Bag, bg: '#f3e5f5', fg: '#6a1b9a' },
   CREDIT_CARD: { icon: CreditCard, bg: '#ffebee', fg: '#c62828' },
 }
 
 // ── 자산 폼 ───────────────────────────────────────────────────────────────────
-interface AssetFormValues { name: string; initialAmount: string; assetType: AssetType }
+interface AssetFormValues {
+  name: string
+  initialAmount: string
+  assetType: AssetType
+}
 
 function AssetForm({
-  cls, editTarget, onSaved, onCancel,
+  cls,
+  editTarget,
+  onSaved,
+  onCancel,
 }: {
-  cls: AssetClass; editTarget: Asset | null; onSaved: () => void; onCancel: () => void
+  cls: AssetClass
+  editTarget: Asset | null
+  onSaved: () => void
+  onCancel: () => void
 }) {
   const qc = useQueryClient()
   const showToast = useToastStore((s) => s.show)
   const availableTypes = cls === 'ASSET' ? ASSET_TYPES : LIAB_TYPES
-  const defaultType    = availableTypes[0]
+  const defaultType = availableTypes[0]
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm<AssetFormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<AssetFormValues>({
     defaultValues: {
-      name:          editTarget?.name ?? '',
+      name: editTarget?.name ?? '',
       initialAmount: editTarget ? fmt(String(editTarget.initialAmount)) : '',
-      assetType:     editTarget?.assetType ?? defaultType,
+      assetType: editTarget?.assetType ?? defaultType,
     },
   })
 
   const { mutate: save, isPending } = useMutation({
-    mutationFn: (req: { name: string; initialAmount: number; assetType: AssetType }) =>
-      editTarget ? assetService.update(editTarget.id, req) : assetService.create(req),
+    mutationFn: (req: {
+      name: string
+      initialAmount: number
+      assetType: AssetType
+    }) =>
+      editTarget
+        ? assetService.update(editTarget.id, req)
+        : assetService.create(req),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['assets'] })
       showToast(editTarget ? '수정되었습니다.' : '추가되었습니다.', 'success')
@@ -77,17 +130,30 @@ function AssetForm({
   })
 
   const onSubmit = (d: AssetFormValues) =>
-    save({ name: d.name, initialAmount: parse(d.initialAmount), assetType: d.assetType })
+    save({
+      name: d.name,
+      initialAmount: parse(d.initialAmount),
+      assetType: d.assetType,
+    })
 
   return (
     <Box
       sx={{
-        p: 2, mb: 1.5, borderRadius: 1,
-        border: '1px solid', borderColor: 'primary.main',
+        p: 2,
+        mb: 1.5,
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'primary.main',
         bgcolor: 'primary.50',
       }}
     >
-      <Typography variant="caption" color="primary" fontWeight={700} display="block" sx={{ mb: 1.5 }}>
+      <Typography
+        variant="caption"
+        color="primary"
+        fontWeight={700}
+        display="block"
+        sx={{ mb: 1.5 }}
+      >
         {editTarget ? '항목 수정' : cls === 'ASSET' ? '자산 추가' : '부채 추가'}
       </Typography>
       <Stack spacing={1.5}>
@@ -115,7 +181,11 @@ function AssetForm({
               fullWidth
               error={!!errors.initialAmount}
               helperText={errors.initialAmount?.message}
-              InputProps={{ endAdornment: <InputAdornment position="end">원</InputAdornment> }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">원</InputAdornment>
+                ),
+              }}
               value={field.value}
               onChange={(e) => field.onChange(fmt(e.target.value))}
               onBlur={field.onBlur}
@@ -130,8 +200,10 @@ function AssetForm({
               <FormControl size="small" fullWidth>
                 <InputLabel>유형</InputLabel>
                 <Select {...field} label="유형">
-                  {availableTypes.map(k => (
-                    <MenuItem key={k} value={k}>{ASSET_TYPE_LABELS[k]}</MenuItem>
+                  {availableTypes.map((k) => (
+                    <MenuItem key={k} value={k}>
+                      {ASSET_TYPE_LABELS[k]}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -140,12 +212,22 @@ function AssetForm({
         )}
       </Stack>
       <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-        <Button size="small" variant="outlined" onClick={onCancel} disabled={isPending}>취소</Button>
         <Button
-          size="small" variant="contained"
+          size="small"
+          variant="outlined"
+          onClick={onCancel}
+          disabled={isPending}
+        >
+          취소
+        </Button>
+        <Button
+          size="small"
+          variant="contained"
           onClick={handleSubmit(onSubmit)}
           disabled={isPending}
-          startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : null}
+          startIcon={
+            isPending ? <CircularProgress size={14} color="inherit" /> : null
+          }
         >
           저장
         </Button>
@@ -155,14 +237,20 @@ function AssetForm({
 }
 
 // ── 자산/부채 탭 콘텐츠 ────────────────────────────────────────────────────────
-function AssetTabContent({ cls, assets }: { cls: AssetClass; assets: Asset[] }) {
+function AssetTabContent({
+  cls,
+  assets,
+}: {
+  cls: AssetClass
+  assets: Asset[]
+}) {
   const qc = useQueryClient()
   const showToast = useToastStore((s) => s.show)
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Asset | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
-  const items = assets.filter(a =>
+  const items = assets.filter((a) =>
     cls === 'ASSET'
       ? ['SAVINGS', 'CASH', 'ETC'].includes(a.assetType)
       : ['CREDIT_CARD'].includes(a.assetType)
@@ -178,9 +266,18 @@ function AssetTabContent({ cls, assets }: { cls: AssetClass; assets: Asset[] }) 
     onError: () => showToast('삭제에 실패했습니다.', 'error'),
   })
 
-  const openAdd = () => { setEditTarget(null); setFormOpen(true) }
-  const openEdit = (a: Asset) => { setEditTarget(a); setFormOpen(true) }
-  const closeForm = () => { setFormOpen(false); setEditTarget(null) }
+  const openAdd = () => {
+    setEditTarget(null)
+    setFormOpen(true)
+  }
+  const openEdit = (a: Asset) => {
+    setEditTarget(a)
+    setFormOpen(true)
+  }
+  const closeForm = () => {
+    setFormOpen(false)
+    setEditTarget(null)
+  }
 
   const totalColor = cls === 'ASSET' ? 'info.main' : 'error.main'
   const total = items.reduce((s, a) => s + a.initialAmount, 0)
@@ -189,8 +286,15 @@ function AssetTabContent({ cls, assets }: { cls: AssetClass; assets: Asset[] }) 
     <Box>
       {/* 합계 */}
       {items.length > 0 && (
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-          <Typography variant="caption" color="text.secondary">{items.length}개 항목</Typography>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 1.5 }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            {items.length}개 항목
+          </Typography>
           <Typography variant="body2" fontWeight={700} color={totalColor}>
             {total.toLocaleString('ko-KR')}원
           </Typography>
@@ -210,7 +314,9 @@ function AssetTabContent({ cls, assets }: { cls: AssetClass; assets: Asset[] }) 
       {/* 추가 버튼 */}
       {!formOpen && (
         <Button
-          size="small" variant="outlined" fullWidth
+          size="small"
+          variant="outlined"
+          fullWidth
           startIcon={<Plus size={14} />}
           onClick={openAdd}
           sx={{ mb: 1.5 }}
@@ -234,26 +340,62 @@ function AssetTabContent({ cls, assets }: { cls: AssetClass; assets: Asset[] }) 
             return (
               <Stack
                 key={a.id}
-                direction="row" alignItems="center"
-                sx={{ px: 1.5, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}
+                direction="row"
+                alignItems="center"
+                sx={{
+                  px: 1.5,
+                  py: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                }}
               >
-                <Avatar sx={{ width: 30, height: 30, bgcolor: cfg.bg, mr: 1.25, flexShrink: 0 }}>
+                <Avatar
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    bgcolor: cfg.bg,
+                    mr: 1.25,
+                    flexShrink: 0,
+                  }}
+                >
                   <Icon size={15} color={cfg.fg} />
                 </Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight={600} noWrap>{a.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">{ASSET_TYPE_LABELS[a.assetType]}</Typography>
+                  <Typography variant="body2" fontWeight={600} noWrap>
+                    {a.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {ASSET_TYPE_LABELS[a.assetType]}
+                  </Typography>
                 </Box>
-                <Typography variant="body2" fontWeight={700} color={cls === 'ASSET' ? 'info.main' : 'error.main'} sx={{ mr: 1 }}>
+                <Typography
+                  variant="body2"
+                  fontWeight={700}
+                  color={cls === 'ASSET' ? 'info.main' : 'error.main'}
+                  sx={{ mr: 1 }}
+                >
                   {a.initialAmount.toLocaleString('ko-KR')}원
                 </Typography>
                 <Tooltip title="수정">
-                  <IconButton size="small" onClick={() => openEdit(a)} sx={{ p: 0.5 }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => openEdit(a)}
+                    sx={{ p: 0.5 }}
+                  >
                     <PencilSimple size={14} />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="삭제">
-                  <IconButton size="small" onClick={() => setDeleteId(a.id)} sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => setDeleteId(a.id)}
+                    sx={{
+                      p: 0.5,
+                      color: 'text.disabled',
+                      '&:hover': { color: 'error.main' },
+                    }}
+                  >
                     <Trash size={14} />
                   </IconButton>
                 </Tooltip>
@@ -276,28 +418,49 @@ function AssetTabContent({ cls, assets }: { cls: AssetClass; assets: Asset[] }) 
 }
 
 // ── 구독 폼 ───────────────────────────────────────────────────────────────────
-interface SubFormValues { name: string; amount: string; billingCycle: BillingCycle; startDate: string }
+interface SubFormValues {
+  name: string
+  amount: string
+  billingCycle: BillingCycle
+  startDate: string
+}
 
 function SubForm({
-  editTarget, onSaved, onCancel,
+  editTarget,
+  onSaved,
+  onCancel,
 }: {
-  editTarget: Subscription | null; onSaved: () => void; onCancel: () => void
+  editTarget: Subscription | null
+  onSaved: () => void
+  onCancel: () => void
 }) {
   const qc = useQueryClient()
   const showToast = useToastStore((s) => s.show)
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm<SubFormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<SubFormValues>({
     defaultValues: {
-      name:         editTarget?.name ?? '',
-      amount:       editTarget ? fmt(String(editTarget.amount)) : '',
+      name: editTarget?.name ?? '',
+      amount: editTarget ? fmt(String(editTarget.amount)) : '',
       billingCycle: editTarget?.billingCycle ?? 'MONTHLY',
-      startDate:    editTarget?.startDate ?? todayStr(),
+      startDate: editTarget?.startDate ?? todayStr(),
     },
   })
 
   const { mutate: save, isPending } = useMutation({
-    mutationFn: (req: { name: string; amount: number; billingCycle: BillingCycle; startDate: string }) =>
-      editTarget ? subscriptionService.update(editTarget.id, req) : subscriptionService.create(req),
+    mutationFn: (req: {
+      name: string
+      amount: number
+      billingCycle: BillingCycle
+      startDate: string
+    }) =>
+      editTarget
+        ? subscriptionService.update(editTarget.id, req)
+        : subscriptionService.create(req),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['subscriptions'] })
       showToast(editTarget ? '수정되었습니다.' : '추가되었습니다.', 'success')
@@ -307,17 +470,31 @@ function SubForm({
   })
 
   const onSubmit = (d: SubFormValues) =>
-    save({ name: d.name, amount: parse(d.amount), billingCycle: d.billingCycle, startDate: d.startDate })
+    save({
+      name: d.name,
+      amount: parse(d.amount),
+      billingCycle: d.billingCycle,
+      startDate: d.startDate,
+    })
 
   return (
     <Box
       sx={{
-        p: 2, mb: 1.5, borderRadius: 1,
-        border: '1px solid', borderColor: 'primary.main',
+        p: 2,
+        mb: 1.5,
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'primary.main',
         bgcolor: 'primary.50',
       }}
     >
-      <Typography variant="caption" color="primary" fontWeight={700} display="block" sx={{ mb: 1.5 }}>
+      <Typography
+        variant="caption"
+        color="primary"
+        fontWeight={700}
+        display="block"
+        sx={{ mb: 1.5 }}
+      >
         {editTarget ? '구독 수정' : '구독 추가'}
       </Typography>
       <Stack spacing={1.5}>
@@ -333,7 +510,10 @@ function SubForm({
         <Controller
           name="amount"
           control={control}
-          rules={{ required: '금액을 입력해주세요.', validate: (v) => parse(v) > 0 || '1원 이상이어야 합니다.' }}
+          rules={{
+            required: '금액을 입력해주세요.',
+            validate: (v) => parse(v) > 0 || '1원 이상이어야 합니다.',
+          }}
           render={({ field }) => (
             <TextField
               label="결제 금액"
@@ -343,7 +523,11 @@ function SubForm({
               fullWidth
               error={!!errors.amount}
               helperText={errors.amount?.message}
-              InputProps={{ endAdornment: <InputAdornment position="end">원</InputAdornment> }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">원</InputAdornment>
+                ),
+              }}
               value={field.value}
               onChange={(e) => field.onChange(fmt(e.target.value))}
               onBlur={field.onBlur}
@@ -357,9 +541,13 @@ function SubForm({
             <FormControl size="small" fullWidth>
               <InputLabel>결제 주기</InputLabel>
               <Select {...field} label="결제 주기">
-                {(Object.keys(BILLING_CYCLE_LABELS) as BillingCycle[]).map(k => (
-                  <MenuItem key={k} value={k}>{BILLING_CYCLE_LABELS[k]}</MenuItem>
-                ))}
+                {(Object.keys(BILLING_CYCLE_LABELS) as BillingCycle[]).map(
+                  (k) => (
+                    <MenuItem key={k} value={k}>
+                      {BILLING_CYCLE_LABELS[k]}
+                    </MenuItem>
+                  )
+                )}
               </Select>
             </FormControl>
           )}
@@ -376,12 +564,22 @@ function SubForm({
         />
       </Stack>
       <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-        <Button size="small" variant="outlined" onClick={onCancel} disabled={isPending}>취소</Button>
         <Button
-          size="small" variant="contained"
+          size="small"
+          variant="outlined"
+          onClick={onCancel}
+          disabled={isPending}
+        >
+          취소
+        </Button>
+        <Button
+          size="small"
+          variant="contained"
           onClick={handleSubmit(onSubmit)}
           disabled={isPending}
-          startIcon={isPending ? <CircularProgress size={14} color="inherit" /> : null}
+          startIcon={
+            isPending ? <CircularProgress size={14} color="inherit" /> : null
+          }
         >
           저장
         </Button>
@@ -408,22 +606,38 @@ function SubTabContent({ subscriptions }: { subscriptions: Subscription[] }) {
     onError: () => showToast('삭제에 실패했습니다.', 'error'),
   })
 
-  const openAdd  = () => { setEditTarget(null); setFormOpen(true) }
-  const openEdit = (s: Subscription) => { setEditTarget(s); setFormOpen(true) }
-  const closeForm = () => { setFormOpen(false); setEditTarget(null) }
+  const openAdd = () => {
+    setEditTarget(null)
+    setFormOpen(true)
+  }
+  const openEdit = (s: Subscription) => {
+    setEditTarget(s)
+    setFormOpen(true)
+  }
+  const closeForm = () => {
+    setFormOpen(false)
+    setEditTarget(null)
+  }
 
   const totalMonthly = subscriptions.reduce((sum, s) => {
     if (s.billingCycle === 'MONTHLY') return sum + s.amount
-    if (s.billingCycle === 'YEARLY')  return sum + Math.round(s.amount / 12)
-    if (s.billingCycle === 'WEEKLY')  return sum + Math.round(s.amount * 4.33)
+    if (s.billingCycle === 'YEARLY') return sum + Math.round(s.amount / 12)
+    if (s.billingCycle === 'WEEKLY') return sum + Math.round(s.amount * 4.33)
     return sum
   }, 0)
 
   return (
     <Box>
       {subscriptions.length > 0 && (
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-          <Typography variant="caption" color="text.secondary">{subscriptions.length}개 · 월 환산</Typography>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 1.5 }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            {subscriptions.length}개 · 월 환산
+          </Typography>
           <Typography variant="body2" fontWeight={700} color="error.main">
             {totalMonthly.toLocaleString('ko-KR')}원
           </Typography>
@@ -431,12 +645,18 @@ function SubTabContent({ subscriptions }: { subscriptions: Subscription[] }) {
       )}
 
       <Collapse in={formOpen}>
-        <SubForm editTarget={editTarget} onSaved={closeForm} onCancel={closeForm} />
+        <SubForm
+          editTarget={editTarget}
+          onSaved={closeForm}
+          onCancel={closeForm}
+        />
       </Collapse>
 
       {!formOpen && (
         <Button
-          size="small" variant="outlined" fullWidth
+          size="small"
+          variant="outlined"
+          fullWidth
           startIcon={<Plus size={14} />}
           onClick={openAdd}
           sx={{ mb: 1.5 }}
@@ -447,38 +667,80 @@ function SubTabContent({ subscriptions }: { subscriptions: Subscription[] }) {
 
       {subscriptions.length === 0 ? (
         <Box sx={{ py: 4, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.disabled">등록된 구독 서비스가 없어요</Typography>
+          <Typography variant="body2" color="text.disabled">
+            등록된 구독 서비스가 없어요
+          </Typography>
         </Box>
       ) : (
         <Stack spacing={0.75}>
           {subscriptions.map((s) => (
             <Stack
               key={s.id}
-              direction="row" alignItems="center"
-              sx={{ px: 1.5, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}
+              direction="row"
+              alignItems="center"
+              sx={{
+                px: 1.5,
+                py: 1,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+              }}
             >
-              <Avatar sx={{ width: 30, height: 30, bgcolor: '#ffebee', mr: 1.25, flexShrink: 0 }}>
+              <Avatar
+                sx={{
+                  width: 30,
+                  height: 30,
+                  bgcolor: '#ffebee',
+                  mr: 1.25,
+                  flexShrink: 0,
+                }}
+              >
                 <Repeat size={15} color="#c62828" />
               </Avatar>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="body2" fontWeight={600} noWrap>{s.name}</Typography>
+                <Typography variant="body2" fontWeight={600} noWrap>
+                  {s.name}
+                </Typography>
                 <Stack direction="row" spacing={0.75} alignItems="center">
-                  <Chip label={BILLING_CYCLE_LABELS[s.billingCycle]} size="small" sx={{ height: 16, fontSize: '0.62rem' }} />
+                  <Chip
+                    label={BILLING_CYCLE_LABELS[s.billingCycle]}
+                    size="small"
+                    sx={{ height: 16, fontSize: '0.62rem' }}
+                  />
                   {s.nextBillingDayOfMonth && (
-                    <Typography variant="caption" color="text.secondary">매월 {s.nextBillingDayOfMonth}일</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      매월 {s.nextBillingDayOfMonth}일
+                    </Typography>
                   )}
                 </Stack>
               </Box>
-              <Typography variant="body2" fontWeight={700} color="error.main" sx={{ mr: 1 }}>
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                color="error.main"
+                sx={{ mr: 1 }}
+              >
                 {s.amount.toLocaleString('ko-KR')}원
               </Typography>
               <Tooltip title="수정">
-                <IconButton size="small" onClick={() => openEdit(s)} sx={{ p: 0.5 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => openEdit(s)}
+                  sx={{ p: 0.5 }}
+                >
                   <PencilSimple size={14} />
                 </IconButton>
               </Tooltip>
               <Tooltip title="삭제">
-                <IconButton size="small" onClick={() => setDeleteId(s.id)} sx={{ p: 0.5, color: 'text.disabled', '&:hover': { color: 'error.main' } }}>
+                <IconButton
+                  size="small"
+                  onClick={() => setDeleteId(s.id)}
+                  sx={{
+                    p: 0.5,
+                    color: 'text.disabled',
+                    '&:hover': { color: 'error.main' },
+                  }}
+                >
                   <Trash size={14} />
                 </IconButton>
               </Tooltip>
@@ -506,7 +768,11 @@ interface AssetManageModalProps {
   defaultTab?: number
 }
 
-export function AssetManageModal({ open, onClose, defaultTab = 0 }: AssetManageModalProps) {
+export function AssetManageModal({
+  open,
+  onClose,
+  defaultTab = 0,
+}: AssetManageModalProps) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [tab, setTab] = useState(defaultTab)
@@ -520,12 +786,14 @@ export function AssetManageModal({ open, onClose, defaultTab = 0 }: AssetManageM
     queryFn: subscriptionService.getAll,
   })
 
-  const assets        = assetRes?.data ?? []
-  const subscriptions = subRes?.data  ?? []
+  const assets = assetRes?.data ?? []
+  const subscriptions = subRes?.data ?? []
 
-  const assetCount  = assets.filter(a => ['SAVINGS','CASH','ETC'].includes(a.assetType)).length
-  const liabCount   = assets.filter(a => a.assetType === 'CREDIT_CARD').length
-  const subCount    = subscriptions.length
+  const assetCount = assets.filter((a) =>
+    ['SAVINGS', 'CASH', 'ETC'].includes(a.assetType)
+  ).length
+  const liabCount = assets.filter((a) => a.assetType === 'CREDIT_CARD').length
+  const subCount = subscriptions.length
 
   return (
     <Dialog
@@ -537,9 +805,15 @@ export function AssetManageModal({ open, onClose, defaultTab = 0 }: AssetManageM
       PaperProps={{ sx: { borderRadius: isMobile ? 0 : 1 } }}
     >
       {/* 헤더 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 3, pt: 2.5, pb: 0 }}>
-        <Typography variant="h6" fontWeight={700} sx={{ flex: 1 }}>자산 관리</Typography>
-        <IconButton size="small" onClick={onClose}><X size={20} /></IconButton>
+      <Box
+        sx={{ display: 'flex', alignItems: 'center', px: 3, pt: 2.5, pb: 0 }}
+      >
+        <Typography variant="h6" fontWeight={700} sx={{ flex: 1 }}>
+          자산 관리
+        </Typography>
+        <IconButton size="small" onClick={onClose}>
+          <X size={20} />
+        </IconButton>
       </Box>
 
       {/* 탭 */}
@@ -547,7 +821,9 @@ export function AssetManageModal({ open, onClose, defaultTab = 0 }: AssetManageM
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
-          sx={{ '& .MuiTab-root': { minWidth: 0, px: 1.5, fontSize: '0.8rem' } }}
+          sx={{
+            '& .MuiTab-root': { minWidth: 0, px: 1.5, fontSize: '0.8rem' },
+          }}
         >
           <Tab label={`자산 ${assetCount > 0 ? `(${assetCount})` : ''}`} />
           <Tab label={`부채 ${liabCount > 0 ? `(${liabCount})` : ''}`} />
@@ -558,21 +834,30 @@ export function AssetManageModal({ open, onClose, defaultTab = 0 }: AssetManageM
 
       {/* 콘텐츠 */}
       <DialogContent sx={{ px: 3, pt: 2, pb: 3 }}>
-        {tab === 0 && (
-          assetLoading
-            ? <Box sx={{ py: 4, textAlign: 'center' }}><CircularProgress size={24} /></Box>
-            : <AssetTabContent cls="ASSET" assets={assets} />
-        )}
-        {tab === 1 && (
-          assetLoading
-            ? <Box sx={{ py: 4, textAlign: 'center' }}><CircularProgress size={24} /></Box>
-            : <AssetTabContent cls="LIABILITY" assets={assets} />
-        )}
-        {tab === 2 && (
-          subLoading
-            ? <Box sx={{ py: 4, textAlign: 'center' }}><CircularProgress size={24} /></Box>
-            : <SubTabContent subscriptions={subscriptions} />
-        )}
+        {tab === 0 &&
+          (assetLoading ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <AssetTabContent cls="ASSET" assets={assets} />
+          ))}
+        {tab === 1 &&
+          (assetLoading ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <AssetTabContent cls="LIABILITY" assets={assets} />
+          ))}
+        {tab === 2 &&
+          (subLoading ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <SubTabContent subscriptions={subscriptions} />
+          ))}
       </DialogContent>
     </Dialog>
   )
